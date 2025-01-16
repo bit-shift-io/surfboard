@@ -1,0 +1,19 @@
+[package]
+name = "surf-board"
+version = "1.0.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+raw-window-handle = "0.6.2"
+slint = "1.9.2"
+wayland-client = "0.31.7"
+
+[build-dependencies]
+slint-build = "1.9.2"
+
+[features]
+default = [ 
+    "slint/default",
+    "slint/raw-window-handle-06",
+    ]
