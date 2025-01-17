@@ -1,6 +1,6 @@
 slint::include_modules!();
 
-
+mod virtual_keyboard;
 
 pub fn main() {
     let ui = MainWindow::new().unwrap();
@@ -12,25 +12,6 @@ pub fn main() {
     ui.run().unwrap();
 }
 
-
-mod virtual_keyboard {
-    use super::*;
-    use slint::*;
-
-    pub fn init(app: &MainWindow) {
-        let weak = app.as_weak();
-        app.global::<VirtualKeyboardHandler>().on_key_pressed({
-            move |key| {
-                weak.unwrap()
-                    .window()
-                    .dispatch_event(slint::platform::WindowEvent::KeyPressed { text: key.clone() });
-                weak.unwrap()
-                    .window()
-                    .dispatch_event(slint::platform::WindowEvent::KeyReleased { text: key });
-            }
-        });
-    }
-}
 
 
 pub fn init_wayland(ui: &MainWindow) {
@@ -65,7 +46,7 @@ pub fn init_wayland(ui: &MainWindow) {
             let wl_surface: wl_surface::WlSurface = 
                                     wl_surface::WlSurface::from_id(&conn, wl_surface_obj_id).unwrap()                                                                
                                                                                             
-            //appdata.clone().lock().unwrap().surface = Some(wl_surface);                       
+            appdata.clone().lock().unwrap().surface = Some(wl_surface);                       
         }                                                                                     
         _ => {}                                                                               
     }
