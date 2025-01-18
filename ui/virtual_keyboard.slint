@@ -143,6 +143,7 @@ export global VirtualKeyboardHandler {
     in-out property <bool> open;
 
     callback key_pressed(/* key */ string);
+    callback add_mouse_position(length, length);
 
     public function switch-keyboard() {
         if (self.current-key-set < self.default-key-sets.length - 1) {
@@ -155,14 +156,7 @@ export global VirtualKeyboardHandler {
     }
 }
 
-// toucharea has no way to pass events to items below....
-// touchArea := TouchArea {
-//     width: parent.width;
-//     height: parent.height;
-//     moved => {
-//         debug(touchArea.mouse-x / 1px + "," + touchArea.mouse-y / 1px)
-//     }
-// }
+
 export component VirtualKeyboard {
     private property <bool> shift;
 
@@ -276,8 +270,21 @@ export component VirtualKeyboard {
                 }
             }
         }
+    }
 
-
+    // this is for testing drawing a curve
+    // toucharea has no way to pass events to items below yet
+    touchArea := TouchArea {
+        width: parent.width;
+        height: parent.height;
+        moved => {
+            //let my_temporary_variable: int = 42;
+            //test = 56;
+            //p = [touchArea.mouse-x, touchArea.mouse-y];
+            //l = root.mouse_history.length;
+            VirtualKeyboardHandler.add_mouse_position(touchArea.mouse-x, touchArea.mouse-y);
+            debug(touchArea.mouse-x / 1px + "," + touchArea.mouse-y / 1px); // divide to convert to string
+        }
     }
 
     animate y { duration: 500ms; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }

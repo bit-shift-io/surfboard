@@ -29,6 +29,7 @@ use wayland_protocols_wlr::layer_shell::v1::client::{
 /// get the layer shell?
 /// https://github.com/Smithay/wayland-rs/issues/737
 pub fn init(ui: &MainWindow) {
+    /*
     let conn = wayland_client::Connection::connect_to_env().unwrap();
 
     // TODO: need to get access to the globals & event_queue, similar to below
@@ -72,6 +73,6 @@ pub fn init(ui: &MainWindow) {
         }                                                                                     
         _ => {}                                                                               
     }
-
+ */
 
 }
