@@ -1,31 +1,31 @@
 pub struct Path {
-    pub command: String,
+    //pub command: String,
     pub rules: Vec<String>,
-    pub stroke_width: usize,
-    pub stroke_color: (u8,u8,u8),
+    //pub stroke_width: usize,
+    //pub stroke_color: (u8,u8,u8),
     pub length: usize,
 }
 
 impl Path {
     pub fn new() -> Self {
         Path {
-            command: String::new(),
+            //command: String::new(),
             rules: Vec::new(),
-            stroke_width: 10,
-            stroke_color: (255, 0, 0),
+            //stroke_width: 10,
+            //stroke_color: (255, 0, 0),
             length: 10,
         }
     }
 
     /// Sets `stroke=\"YourColor\"`. If unset it will remain as `stroke="none"`.
-    pub fn set_stroke_color(&mut self, r: u8, g: u8, b: u8) {
-        self.stroke_color = (r, g, b);
-    }
+    // pub fn set_stroke_color(&mut self, r: u8, g: u8, b: u8) {
+    //     self.stroke_color = (r, g, b);
+    // }
 
     /// Sets `stroke-width=\"YourWidth\"`. If unset it will remain as `stroke-width=\"0\"`.
-    pub fn set_stroke_width(&mut self, width: usize) {
-        self.stroke_width = width;
-    }
+    // pub fn set_stroke_width(&mut self, width: usize) {
+    //     self.stroke_width = width;
+    // }
 
     /// Adds rule `"M x y"`
     pub fn move_to(&mut self, pos: [usize;2]) {

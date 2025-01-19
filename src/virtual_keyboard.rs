@@ -52,8 +52,6 @@ impl<'a> VirtualKeyboard<'a> {
 
         // gesture path
         let mut path = Path::new();
-        path.set_stroke_color(255, 0, 0);
-        path.set_stroke_width(5);
         path.add_point([0, 0]);
         path.add_point([0, 100]);
         path.add_point([50, 50]);

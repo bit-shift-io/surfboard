@@ -294,9 +294,11 @@ export component VirtualKeyboard {
     path := Path {
         width: parent.width;
         height: parent.height;
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
         commands: VirtualKeyboardHandler.path_command;
-        stroke: red;
-        stroke-width: 1px;
+        stroke: Colors.rgba(128, 0, 128, 0.5);
+        stroke-width: 10px;
     }
 
     animate y { duration: 500ms; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
