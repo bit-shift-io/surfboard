@@ -12,6 +12,6 @@ pub fn main() {
     info!("== Start Surfboard ==");
     let ui = MainWindow::new().unwrap();
     wayland::init(&ui);       
-    virtual_keyboard::init(&ui);
+    virtual_keyboard::VirtualKeyboard::new(&ui);
     ui.run().unwrap();
 }
