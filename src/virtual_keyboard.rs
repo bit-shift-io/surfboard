@@ -1,6 +1,7 @@
 use super::*;
 use slint::*;
 
+
 pub fn init(ui: &MainWindow) {
     let ui_weak = ui.as_weak();
     let keyboard_handler = ui.global::<VirtualKeyboardHandler>();
@@ -17,19 +18,26 @@ pub fn init(ui: &MainWindow) {
         }
     });
 
-    // callback
-    keyboard_handler.on_add_mouse_position(|x: f32, y: f32| {
-        println!("{}, {}", x, y);
+    //let keyboard_handler_weak = keyboard_handler.as_weak(); // this doesnt work
+    keyboard_handler.on_mouse_moved(|x: f32, y: f32| {
+        let point = LogicalPosition::new(x, y);
+        let array = keyboard_handler.get_mouse_position_history();
+        keyboard_handler.set_mouse_position_history(array);
+        info!("{}, {}", x, y);
     });
+
+    // assign value directly
+    let command = "M 0 0 L 0 100 A 1 1 0 0 0 100 100 L 100 0 Z";
+    keyboard_handler.set_path_command(command.into());
 
 
     // example of read in-out value
     // non async tasks
-    // ui.on_request_increase_value({
-    //     let ui_handle = ui.as_weak();
+    // keyboard_handler.on_path_command({
+    //     let command = "M 0 0 L 0 100 A 1 1 0 0 0 100 100 L 100 0 Z";
     //     move || {
-    //         let ui = ui_handle.unwrap();
-    //         ui.set_speed(ui.get_speed() + 1);
+    //         let ui = ui_weak.unwrap();
+    //         ui.set_path_command(command);
     //     }
     // });
 }

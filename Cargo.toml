@@ -5,6 +5,8 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
+env_logger = "0.11.6"
+log = "0.4.22"
 raw-window-handle = "0.6.2"
 slint = "1.9.2"
 wayland-client = "0.31.7"

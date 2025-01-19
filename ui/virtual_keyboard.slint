@@ -143,7 +143,7 @@ export global VirtualKeyboardHandler {
     in-out property <bool> open;
 
     callback key_pressed(/* key */ string);
-    callback add_mouse_position(length, length);
+    in-out property <int> name;
 
     public function switch-keyboard() {
         if (self.current-key-set < self.default-key-sets.length - 1) {
@@ -154,6 +154,13 @@ export global VirtualKeyboardHandler {
 
         self.current-key-set = min(self.default-key-sets.length - 1, max(0, self.current-key-set))
     }
+
+      // mouse guestures
+      callback mouse_pressed();
+      callback mouse_released();
+      callback mouse_moved(length, length);
+      in property <string> path_command: "";
+      in-out property <[[Point]]> mouse_position_history;
 }
 
 
@@ -278,13 +285,18 @@ export component VirtualKeyboard {
         width: parent.width;
         height: parent.height;
         moved => {
-            //let my_temporary_variable: int = 42;
-            //test = 56;
-            //p = [touchArea.mouse-x, touchArea.mouse-y];
-            //l = root.mouse_history.length;
-            VirtualKeyboardHandler.add_mouse_position(touchArea.mouse-x, touchArea.mouse-y);
-            debug(touchArea.mouse-x / 1px + "," + touchArea.mouse-y / 1px); // divide to convert to string
+            VirtualKeyboardHandler.mouse_moved(touchArea.mouse-x, touchArea.mouse-y);
+            //debug(touchArea.mouse-x / 1px + "," + touchArea.mouse-y / 1px); // divide to convert to string
         }
+    }
+
+    // guesture display here
+    path := Path {
+        width: parent.width;
+        height: parent.height;
+        commands: VirtualKeyboardHandler.path_command;
+        stroke: red;
+        stroke-width: 1px;
     }
 
     animate y { duration: 500ms; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
