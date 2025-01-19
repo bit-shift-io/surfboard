@@ -8,7 +8,9 @@ mod svg_path;
 mod utils;
 use utils::*;
 
-pub fn main() {
+
+#[tokio::main]
+async fn main() {
     functions::init_logger();
     info!("== Start Surfboard ==");
     let ui = MainWindow::new().unwrap();

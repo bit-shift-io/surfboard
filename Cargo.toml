@@ -7,6 +7,7 @@ build = "build.rs"
 [dependencies]
 env_logger = "0.11.6"
 log = "0.4.22"
+tokio = "1.42.0"
 raw-window-handle = "0.6.2"
 slint = "1.9.2"
 wayland-client = "0.31.7"
@@ -16,7 +17,8 @@ wayland-protocols-wlr = "0.3.5"
 slint-build = "1.9.2"
 
 [features]
-default = [ 
+default = [
+    "tokio/full",
     "slint/default",
     "slint/raw-window-handle-06",
     ]
