@@ -1,11 +1,13 @@
 use super::*;
 use private_unstable_api::re_exports::Point;
 use slint::*;
+use svg_path::Path;
 
 pub struct VirtualKeyboard<'a> {
     pub keyboard_handler: VirtualKeyboardHandler<'a>,
     pub main_window: &'a MainWindow,
     pub mouse_position_history: Vec<Point>, // or logical position?
+    pub svg_path: Path,
 }
 
 impl<'a> VirtualKeyboard<'a> {
@@ -48,10 +50,22 @@ impl<'a> VirtualKeyboard<'a> {
         //     }
         // });
 
+        // gesture path
+        let mut path = Path::new();
+        path.set_stroke_color(255, 0, 0);
+        path.set_stroke_width(5);
+        path.add_point([0, 0]);
+        path.add_point([0, 100]);
+        path.add_point([50, 50]);
+        info!("{}", path.create_command());
+
+        keyboard_handler.set_path_command(path.create_command().into());
+
         VirtualKeyboard {
             keyboard_handler,
             main_window: ui,
             mouse_position_history: Vec::new(),
+            svg_path: path,
         }
         
     }

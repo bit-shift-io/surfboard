@@ -4,6 +4,7 @@ extern crate log;
 slint::include_modules!();
 mod virtual_keyboard;
 mod wayland;
+mod svg_path;
 mod utils;
 use utils::*;
 
