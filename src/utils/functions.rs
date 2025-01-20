@@ -3,9 +3,7 @@
 /// customized to only include the log message, without the log level.
 pub fn init_logger() {
     use std::io::Write;
-    use std::env;
     use env_logger::Builder;
-    env::set_var("RUST_LOG", "info");
     Builder::from_default_env()
         .format(|buf, record| {
             //let level = record.level();
@@ -13,4 +11,11 @@ pub fn init_logger() {
             writeln!(buf, "{}", message)
         })
         .init();
+}
+
+/// Initialize environment variables to default values.
+pub fn init_env_var() {
+    use std::env;
+    env::set_var("RUST_LOG", "info");
+    env::set_var("SLINT_BACKEND", "winit-skia");
 }

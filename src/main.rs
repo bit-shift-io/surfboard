@@ -11,6 +11,7 @@ use utils::*;
 
 #[tokio::main]
 async fn main() {
+    functions::init_env_var();
     functions::init_logger();
     info!("== Start Surfboard ==");
     let ui = MainWindow::new().unwrap();

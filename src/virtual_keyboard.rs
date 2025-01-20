@@ -57,7 +57,7 @@ impl<'a> VirtualKeyboard<'a> {
             move |x: f32, y: f32| {
                 //svg_path.add_point([x as usize, y as usize]);
                 info!("{}, {}", x, y);
-                //let point = [x as usize, y as usize];
+                let point = [x as usize, y as usize];
                 //svg_path.add_point(point);
             }
         });
