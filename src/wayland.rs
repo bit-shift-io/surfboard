@@ -2,7 +2,13 @@ use slint::*;
 use super::*;
 use raw_window_handle::HasWindowHandle;
 use wayland_client::{
-    backend::Backend, delegate_noop, globals::{registry_queue_init, GlobalListContents}, protocol::{
+    backend::Backend, 
+    delegate_noop, 
+    globals::{
+        registry_queue_init, 
+        GlobalListContents
+    }, 
+    protocol::{
         wl_buffer::WlBuffer,
         wl_compositor::WlCompositor,
         wl_output::WlOutput,
@@ -10,12 +16,26 @@ use wayland_client::{
         wl_shm::{Format, WlShm},
         wl_shm_pool::WlShmPool,
         wl_surface::WlSurface,
-    }, Connection, Dispatch, Proxy, QueueHandle
+    }, 
+    Connection, 
+    Dispatch, 
+    Proxy, 
+    QueueHandle
 };
 use wayland_protocols_wlr::layer_shell::v1::client::{
-    zwlr_layer_shell_v1::{Layer, ZwlrLayerShellV1},
-    zwlr_layer_surface_v1::{self, Anchor, KeyboardInteractivity, ZwlrLayerSurfaceV1},
+    zwlr_layer_shell_v1::{
+        self,
+        Layer, 
+        ZwlrLayerShellV1
+    },
+    zwlr_layer_surface_v1::{
+        self, 
+        Anchor, 
+        KeyboardInteractivity, 
+        ZwlrLayerSurfaceV1
+    },
 };
+
 
 
 
@@ -97,6 +117,12 @@ pub fn init(ui: &MainWindow) {
             );
 
             layer_surface.set_anchor(Anchor::Bottom);
+            layer_surface.set_size(800, 300);
+
+            //layer_shell.write_request(conn, req)
+            //queue.roundtrip(data)
+
+
 
         }                                                                                     
         _ => {}                                                                               
@@ -127,10 +153,23 @@ impl Dispatch<ZwlrLayerSurfaceV1, ()> for Delegate {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        println!("test");
+        info!("test layer surface");
         if let zwlr_layer_surface_v1::Event::Configure { serial, .. } = event {
             layer_surface.ack_configure(serial);
         }
+    }
+}
+
+impl Dispatch<ZwlrLayerShellV1, ()> for Delegate {
+    fn event(
+        state: &mut Self,
+        proxy: &ZwlrLayerShellV1,
+        event: <ZwlrLayerShellV1 as Proxy>::Event,
+        data: &(),
+        conn: &Connection,
+        qhandle: &QueueHandle<Self>,
+    ) {
+        info!("test layer shell");
     }
 }
 
@@ -140,4 +179,4 @@ delegate_noop!(Delegate: ignore WlShmPool);
 delegate_noop!(Delegate: ignore WlBuffer);
 delegate_noop!(Delegate: ignore WlCompositor);
 delegate_noop!(Delegate: ignore WlSurface);
-delegate_noop!(Delegate: ignore ZwlrLayerShellV1);
+//delegate_noop!(Delegate: ignore ZwlrLayerShellV1);
