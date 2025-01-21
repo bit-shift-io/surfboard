@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Keyboardthing
+Exec=/home/bronson/Projects/surfboard
+Type=Application
+Terminal=true
+X-KDE-Wayland-VirtualKeyboard=true
+Icon=input-keyboard-virtual
+NoDisplay=true
