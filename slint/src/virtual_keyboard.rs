@@ -52,29 +52,32 @@ impl<'a> VirtualKeyboard<'a> {
         });
         */
 
-
+        // async task
         handler.on_mouse_moved({
+            let ui_weak = ui.as_weak();
+            // move to closure
             move |x: f32, y: f32| {
-                //svg_path.add_point([x as usize, y as usize]);
-                info!("{}, {}", x, y);
-                let point = [x as usize, y as usize];
-                //svg_path.add_point(point);
+                // spawn async task
+                let _ = slint::spawn_local(async move {
+                    info!("{}, {}", x, y);
+                    let point = [x as usize, y as usize];
+                    let tx = signals::get_mouse_position_tx().await;
+                    let _ = tx.send(point).await;
+                });
             }
         });
 
-        // callback
-        // keyboard.handler.on_mouse_moved({
-        //     let ui_weak = ui.as_weak();
+
+        // handler.on_mouse_moved({
         //     move |x: f32, y: f32| {
-        //         let ui= ui_weak.unwrap();
-        //         let keyboard_handler = ui.global::<VirtualKeyboardHandler>();
-        //         keyboard.svg_path.add_point([x as usize, y as usize]);
-        //         let command = keyboard.svg_path.create_command().into();
-        //         keyboard_handler.set_path_command(command);
+        //         //svg_path.add_point([x as usize, y as usize]);
         //         info!("{}, {}", x, y);
+        //         let point = [x as usize, y as usize];
+        //         //svg_path.add_point(point);
         //     }
         // });
-    
+
+
         // // assign value directly
         // let command = "M 0 0 L 0 100 A 1 1 0 0 0 100 100 L 100 0 Z";
         // keyboard_handler.set_path_command(command.into());
