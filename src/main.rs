@@ -7,6 +7,7 @@ use iced_layershell::Application;
 
 mod app;
 mod utils;
+mod layout;
 use keyboard::Keyboard;
 use utils::*;
 use app::*;
