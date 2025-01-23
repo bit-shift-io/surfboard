@@ -9,13 +9,11 @@ env_logger = "0.11.6"
 log = "0.4.22"
 iced = "0.13.1"
 iced_layershell = "0.13.2"
-#iced_aw = "0.11.0"
-#iced_fonts = "0.1.1"
 
 
 [features]
 default = [
- #   "eframe/wayland",
+    "iced/lazy",
  #   "egui_extras/image",
     ]
 

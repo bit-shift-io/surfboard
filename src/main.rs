@@ -8,6 +8,7 @@ use iced_layershell::Application;
 mod app;
 mod utils;
 mod views;
+mod components;
 use utils::*;
 use app::*;
 
