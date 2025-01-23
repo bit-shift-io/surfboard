@@ -7,8 +7,7 @@ use iced_layershell::Application;
 
 mod app;
 mod utils;
-mod layout;
-use keyboard::Keyboard;
+mod views;
 use utils::*;
 use app::*;
 
@@ -20,7 +19,7 @@ pub fn main() -> Result<(), iced_layershell::Error> {
 
     let start_mode = handle_args();
 
-    Keyboard::run(Settings {
+    MainWindow::run(Settings {
         layer_settings: LayerShellSettings {
             size: Some((0, 400)),
             exclusive_zone: 400,
