@@ -13,3 +13,13 @@ Install `surfboard.desktop` to `/usr/share/applications`, with the path correspo
 ### Run an example other than main.rs
 
 Drop the rs file in the bin folder and run: `cargo run --bin example`
+
+
+## TODO
+
+* split keyboard panes 
+https://github.com/iced-rs/iced/blob/master/examples/pane_grid/src/main.rs
+* keyboard character -> evdev? 
+https://discourse.iced.rs/t/how-to-use-keyboard-character/424
+* styles, events, canvas
+https://github.com/fogarecious/iced_tutorial/blob/main/README.md

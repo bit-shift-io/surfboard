@@ -13,8 +13,8 @@ iced_layershell = "0.13.2"
 
 [features]
 default = [
-    "iced/lazy",
- #   "egui_extras/image",
+#    "iced/lazy",
+#    "iced/advanced",
     ]
 
 

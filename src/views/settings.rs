@@ -1,5 +1,5 @@
 use iced::{widget::{button, pick_list, row, Button, Container, PickList, Text}, Alignment, Length, Renderer, Task as Command, Theme};
-use crate::{app::{MainMessage, ViewTrait}, ScreenEdge, Views};
+use crate::{app::{MainMessage, ViewTrait}, ScreenEdge, View};
 
 
 #[derive(Debug, Clone)]
@@ -39,7 +39,7 @@ impl ViewTrait for SettingsView {
         //     ..primary(theme, status)
         // });
 
-        let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(Views::Main));
+        let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::Main));
         
         let pick_screen_edge: PickList<'_, ScreenEdge, &[ScreenEdge], ScreenEdge, MainMessage, Theme, Renderer> = pick_list(
             &ScreenEdge::ALL[..],
@@ -64,6 +64,10 @@ impl ViewTrait for SettingsView {
 
     fn name(&self) -> String {
         String::from("settings")
+    }
+    
+    fn class(&self) -> View {
+        View::Settings
     }
 }
 

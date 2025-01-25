@@ -1,5 +1,5 @@
 use crate::app::{MainMessage, ViewTrait};
-use crate::{ScreenEdge, Views};
+use crate::{ScreenEdge, View};
 use iced::widget::{button, column, pick_list, row, text, text_input, Button, Column, Container, PickList, Text};
 use iced::Length;
 use std::fmt::Debug;
@@ -24,6 +24,14 @@ impl ViewTrait for MainView {
         column![
             row![
                 //KeyButton::new(String::from("qwe")),
+                key(
+                    "Hover and click me!",
+                    Some("(I'm the footnote)"),
+                    MainMessage::Debug(String::from("enter")),
+                    MainMessage::Debug(String::from("exit")),
+                    MainMessage::Debug(String::from("press")),
+                    MainMessage::Debug(String::from("release")),
+                ),
                 button("q").on_press(MainMessage::Debug(String::from("q"))),
                 button("w").on_press(MainMessage::Debug(String::from("w"))),
                 button("e").on_press(MainMessage::Debug(String::from("e"))),
@@ -56,11 +64,11 @@ impl ViewTrait for MainView {
                 button("b").on_press(MainMessage::Debug(String::from("t"))),
                 button("n").on_press(MainMessage::Debug(String::from("y"))),
                 button("m").on_press(MainMessage::Debug(String::from("u"))),
-                button("Enter").on_press(MainMessage::ChangeView(Views::Settings)),
+                button("Enter").on_press(MainMessage::ChangeView(View::Settings)),
             ],
 
             row![
-                button("@").on_press(MainMessage::ChangeView(Views::Settings)).width(Length::Fill),
+                button("@").on_press(MainMessage::ChangeView(View::Settings)).width(Length::Fill),
                 button(":)").on_press(MainMessage::Debug(String::from("q"))).width(Length::Fill),
                 button("     ").on_press(MainMessage::Debug(String::from("w"))).width(Length::Fill),
                 button(".").on_press(MainMessage::Debug(String::from("e"))).width(Length::Fill),
@@ -68,7 +76,7 @@ impl ViewTrait for MainView {
                 button(">").on_press(MainMessage::Debug(String::from("t"))).width(Length::Fill),
                 button("^").on_press(MainMessage::Debug(String::from("y"))).width(Length::Fill),
                 button("<").on_press(MainMessage::Debug(String::from("u"))).width(Length::Fill),
-                button("^").on_press(MainMessage::ChangeView(Views::Settings)).width(Length::Fill),
+                button("^").on_press(MainMessage::ChangeView(View::Settings)).width(Length::Fill),
             ],
 
         ]
@@ -80,6 +88,10 @@ impl ViewTrait for MainView {
     
     fn name(&self) -> String {
         String::from("compact")
+    }
+    
+    fn class(&self) -> View {
+        View::Main
     }
 }
 

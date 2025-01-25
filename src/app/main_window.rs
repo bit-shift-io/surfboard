@@ -1,5 +1,5 @@
 use iced::{event, Color, Element, Event, Task as Command, Theme};
-use iced_layershell::{reexport::Anchor, Application, to_layer_message};
+use iced_layershell::{reexport::Anchor, to_layer_message, Application};
 
 use crate::views::*;
 use super::*;
@@ -9,16 +9,8 @@ pub struct MainWindow {
     screen_edge: ScreenEdge,
     theme: iced::Theme,
     dark_mode: bool,
-    current_view: Views, // enum
+    current_view: View, // enum
     views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
-}
-
-
-#[derive(Clone, Copy, Debug)]
-pub enum Views {
-    Main,
-    Settings,
-    // Add more views/layouts here (e.g., Qwerty, Dvorak)
 }
 
 
@@ -29,27 +21,26 @@ pub enum MainMessage {
     StringMessage(String),
     IcedEvent(Event),
     ChangeScreenEdge(ScreenEdge),
-    ChangeView(Views),
+    ChangeView(View),
+    KeyEnter,
+    KeyExit,
+    KeyPress,
+    KeyRelease,
+}
+
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum View {
+    Main,
+    Settings,
+    // Add more views/layouts here
 }
 
 
 impl MainWindow {
-    fn current_view_mut(&mut self) -> &mut Box<dyn ViewTrait> {
-        match self.current_view {
-            Views::Main => &mut self.views[0],
-            Views::Settings => &mut self.views[1],
-            // Add more matches for other layouts
-        }
-    }
-
     fn current_view(&self) -> &Box<dyn ViewTrait> {
-        match self.current_view {
-            Views::Main => &self.views[0],
-            Views::Settings => &self.views[1],
-            // Add more matches for other layouts
-        }
+        self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
-
 }
 
 
@@ -60,18 +51,20 @@ impl Application for MainWindow {
     type Executor = iced::executor::Default;
 
     fn new(_flags: ()) -> (Self, Command<Self::Message>) {
-        // put new views/layouts here
+
+        // Add more views/layouts here
         let views: Vec<Box<dyn ViewTrait>> = vec![
             Box::new(MainView::new()),
             Box::new(SettingsView::new()),
         ];
 
+        // return new main window object + command
         (
             Self {
                 screen_edge: ScreenEdge::Top,
                 theme: iced::Theme::Light,
                 dark_mode: true,
-                current_view: Views::Main,
+                current_view: View::Main,
                 views,
             },
             Command::none(),
@@ -96,7 +89,7 @@ impl Application for MainWindow {
                 info!("{s}");
             }
             MainMessage::IcedEvent(event) => {
-                info!("{event:?}");
+                //info!("{event:?}");
             }
             MainMessage::ChangeScreenEdge(screen_edge) => {
                 self.screen_edge = screen_edge;
