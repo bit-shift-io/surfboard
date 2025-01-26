@@ -20,6 +20,11 @@ pub fn main() -> Result<(), iced_layershell::Error> {
 
     let start_mode = handle_args();
 
+    // run in window
+    // let _ = run_window();
+    // Ok(())
+
+    // run in layer shell
     MainWindow::run(Settings {
         layer_settings: LayerShellSettings {
             size: Some((0, 400)),
@@ -30,6 +35,14 @@ pub fn main() -> Result<(), iced_layershell::Error> {
         },
         ..Default::default()
     })
+}
+
+fn run_window() -> iced::Result {
+    iced::application(MainWindow::title, MainWindow::update, MainWindow::view)
+        .centered()
+        //.subscription(MainWindow::subscription)
+        .window_size((600.0, 300.0))
+        .run()
 }
 
 

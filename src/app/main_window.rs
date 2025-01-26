@@ -6,6 +6,7 @@ use super::*;
 
 
 pub struct MainWindow {
+    windowed: bool,
     screen_edge: ScreenEdge,
     theme: iced::Theme,
     dark_mode: bool,
@@ -38,8 +39,34 @@ pub enum View {
 
 
 impl MainWindow {
+    pub fn title(&self) -> String {
+        format!("surfboard")
+    }
+
     fn current_view(&self) -> &Box<dyn ViewTrait> {
         self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
+    }
+}
+
+impl Default for MainWindow {
+    /// Creates a default instance of [`MainWindow`].
+    fn default() -> Self {
+
+        // Add more views/layouts here
+        let views: Vec<Box<dyn ViewTrait>> = vec![
+            Box::new(MainView::new()),
+            Box::new(SettingsView::new()),
+        ];
+
+        // Return a default instance of MainWindow
+        Self {
+            windowed: true,
+            screen_edge: ScreenEdge::Top,
+            theme: iced::Theme::Light,
+            dark_mode: true,
+            current_view: View::Main,
+            views,
+        }
     }
 }
 
@@ -50,25 +77,11 @@ impl Application for MainWindow {
     type Theme = Theme;
     type Executor = iced::executor::Default;
 
+    /// Create a new instance of [`MainWindow`].
     fn new(_flags: ()) -> (Self, Command<Self::Message>) {
-
-        // Add more views/layouts here
-        let views: Vec<Box<dyn ViewTrait>> = vec![
-            Box::new(MainView::new()),
-            Box::new(SettingsView::new()),
-        ];
-
-        // return new main window object + command
-        (
-            Self {
-                screen_edge: ScreenEdge::Top,
-                theme: iced::Theme::Light,
-                dark_mode: true,
-                current_view: View::Main,
-                views,
-            },
-            Command::none(),
-        )
+        let mut default_window = Self::default();
+        default_window.windowed = false;
+        (default_window, Command::none())
     }
     
 
