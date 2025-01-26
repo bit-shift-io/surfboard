@@ -20,29 +20,30 @@ pub fn main() -> Result<(), iced_layershell::Error> {
 
     let start_mode = handle_args();
 
-    // run in window
-    // let _ = run_window();
-    // Ok(())
-
-    // run in layer shell
+    // window kind of mode?
     MainWindow::run(Settings {
         layer_settings: LayerShellSettings {
-            size: Some((0, 400)),
-            exclusive_zone: 400,
-            anchor: Anchor::Bottom | Anchor::Left | Anchor::Right,
+            size: Some((600, 250)),
+            //exclusive_zone: 250,
+            anchor: Anchor::Bottom | Anchor::Right,
             start_mode,
+            margin: (10, 10, 10, 10),
             ..Default::default()
         },
         ..Default::default()
     })
-}
 
-fn run_window() -> iced::Result {
-    iced::application(MainWindow::title, MainWindow::update, MainWindow::view)
-        .centered()
-        //.subscription(MainWindow::subscription)
-        .window_size((600.0, 300.0))
-        .run()
+    // docked mode
+    // MainWindow::run(Settings {
+    //     layer_settings: LayerShellSettings {
+    //         size: Some((100, 200)),
+    //         exclusive_zone: 200,
+    //         anchor: Anchor::Bottom | Anchor::Left | Anchor::Right,
+    //         start_mode,
+    //         ..Default::default()
+    //     },
+    //     ..Default::default()
+    // })
 }
 
 
