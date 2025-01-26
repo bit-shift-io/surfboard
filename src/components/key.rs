@@ -9,7 +9,7 @@ use iced::{
         Shell, 
         Text, 
         Widget
-    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, touch, widget::{center, container, horizontal_space, mouse_area, stack, text::{LineHeight, Shaping, Wrapping}}, Border, Color, Element, Event, Length::{self, Fill}, Rectangle, Shadow, Size, Theme
+    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, touch, widget::{center, container, horizontal_space, mouse_area, stack, text::{LineHeight, Shaping, Wrapping}}, Border, Color, Element, Event, Length::{self, Fill}, Padding, Rectangle, Shadow, Size, Theme
 };
 
 use crate::app::*;
@@ -138,13 +138,49 @@ where
         }
     }
 
+    // fn layout(
+    //     &self,
+    //     _tree: &mut Tree,
+    //     _renderer: &Renderer,
+    //     _limits: &layout::Limits,
+    // ) -> layout::Node {
+    //     layout::Node::new(Size::new(100.0, 100.0))
+    // }
+
+    fn children(&self) -> Vec<Tree> {
+        vec![Tree::new(&self.content)]
+    }
+
     fn layout(
         &self,
-        _tree: &mut Tree,
-        _renderer: &Renderer,
-        _limits: &layout::Limits,
+        tree: &mut Tree,
+        renderer: &Renderer,
+        limits: &layout::Limits,
     ) -> layout::Node {
-        layout::Node::new(Size::new(100.0, 100.0))
+
+        let size = self.content.as_widget().size_hint();
+        let width = size.width.fluid();
+        let height = size.height.fluid();
+        let padding = Padding {
+            top: 5.0,
+            bottom: 5.0,
+            right: 10.0,
+            left: 10.0,
+        };
+
+        layout::padded(
+            limits,
+            width,
+            height,
+            padding,
+            |limits| {
+                self.content.as_widget().layout(
+                    &mut tree.children[0],
+                    renderer,
+                    limits,
+                )
+            },
+        )
     }
 
     fn draw(
@@ -158,7 +194,7 @@ where
         viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
-        //let content_layout = layout.children().next().unwrap();
+        let content_layout = layout.children().next().unwrap(); // crash?
         let is_mouse_over = cursor.is_over(bounds);
 
         
@@ -182,35 +218,35 @@ where
 
 
         // draw text like a button
-        // self.content.as_widget().draw(
-        //     &state.children[0],
-        //     renderer,
-        //     theme,
-        //     &renderer::Style {
-        //         text_color: style.text_color,
-        //     },
-        //     content_layout,
-        //     cursor,
-        //     &viewport,
-        // );
+        self.content.as_widget().draw(
+            &state.children[0],
+            renderer,
+            theme,
+            &renderer::Style {
+                text_color: Color::from_rgb(1.0, 1.0, 1.0), //style.text_color,
+            },
+            content_layout,
+            cursor,
+            &viewport,
+        );
 
         // draw text manually
-        renderer.fill_text(
-            Text {
-                content: "q".into(),
-                bounds: bounds.size(),
-                size: renderer.default_size(),
-                line_height: LineHeight::default(),
-                font: renderer.default_font(),
-                horizontal_alignment: Horizontal::Center,
-                vertical_alignment: Vertical::Center,
-                wrapping: Wrapping::Word,
-                shaping: Shaping::default(),
-            },
-            bounds.center(),
-            Color::from_rgb(1.0, 1.0, 1.0),
-            *viewport,
-        );
+        // renderer.fill_text(
+        //     Text {
+        //         content: "q".into(),
+        //         bounds: bounds.size(),
+        //         size: renderer.default_size(),
+        //         line_height: LineHeight::default(),
+        //         font: renderer.default_font(),
+        //         horizontal_alignment: Horizontal::Center,
+        //         vertical_alignment: Vertical::Center,
+        //         wrapping: Wrapping::Word,
+        //         shaping: Shaping::default(),
+        //     },
+        //     bounds.center(),
+        //     Color::from_rgb(1.0, 1.0, 1.0),
+        //     *viewport,
+        // );
     }
 
     /// cursor type
@@ -346,13 +382,3 @@ where
         Self::new(widget)
     }
 }
-
-// impl<'a, Message: 'a, Theme, Renderer> From<Key<'a, Message, Theme, Renderer>> for Element<'a, Message, Theme, Renderer>
-// where
-//     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-//     Message: Clone,
-// {
-//     fn from(widget: Key<'a, Message, Theme, Renderer>) -> Self {
-//         Self::new(widget)
-//     }
-// }
