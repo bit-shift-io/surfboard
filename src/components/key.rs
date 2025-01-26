@@ -9,20 +9,7 @@ use iced::{
         Shell, 
         Text, 
         Widget
-    }, 
-    alignment::{Horizontal, Vertical}, 
-    event, keyboard::{self, key::Named}, 
-    widget::{center, container, horizontal_space, mouse_area, stack, text::{LineHeight, Shaping, Wrapping}}, 
-    Border, 
-    Color, 
-    Element, 
-    Event, 
-    Length::{self, Fill}, 
-    Rectangle, 
-    Settings, 
-    Shadow, 
-    Size, 
-    Theme
+    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, touch, widget::{center, container, horizontal_space, mouse_area, stack, text::{LineHeight, Shaping, Wrapping}}, Border, Color, Element, Event, Length::{self, Fill}, Rectangle, Shadow, Size, Theme
 };
 
 use crate::app::*;
@@ -73,28 +60,76 @@ use crate::app::*;
 // }
 
 
-pub struct Key<Message> {
+pub struct Key<'a, Message, Renderer = iced::Renderer> 
+where
+    Renderer: iced::advanced::Renderer,
+{
+    content: Element<'a, Message, Theme, Renderer>,
     mouse_over: bool,
     highlight: bool,
-    on_press: Message,
+    on_press: Option<OnPress<'a, Message>>,
+}
+
+enum OnPress<'a, Message> {
+    Direct(Message),
+    Closure(Box<dyn Fn() -> Message + 'a>),
 }
 
 
-impl<Message> Key<Message> {
-    pub fn new(on_press: Message) -> Self {
-        Self { 
+impl<'a, Message, Renderer> Key<'a, Message, Renderer>
+where
+    Renderer: iced::advanced::Renderer,
+{
+    /// Creates a new [`Key`] with the given content.
+    pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>,) -> Self {
+        let content = content.into();
+        Self {
+            content,
             mouse_over: false,
             highlight: false,
-            on_press,
+            on_press: None,
         }
+    }
+
+    /// Sets the message that will be produced when the [`Key`] is pressed.
+    ///
+    /// Unless `on_press` is called, the [`Key`] will be disabled.
+    pub fn on_press(mut self, on_press: Message) -> Self {
+        self.on_press = Some(OnPress::Direct(on_press));
+        self
+    }
+
+    /// Sets the message that will be produced when the [`Button`] is pressed.
+    ///
+    /// This is analogous to [`Button::on_press`], but using a closure to produce
+    /// the message.
+    ///
+    /// This closure will only be called when the [`Button`] is actually pressed and,
+    /// therefore, this method is useful to reduce overhead if creating the resulting
+    /// message is slow.
+    pub fn on_press_with(
+        mut self,
+        on_press: impl Fn() -> Message + 'a,
+    ) -> Self {
+        self.on_press = Some(OnPress::Closure(Box::new(on_press)));
+        self
+    }
+
+    /// Sets the message that will be produced when the [`Button`] is pressed,
+    /// if `Some`.
+    ///
+    /// If `None`, the [`Button`] will be disabled.
+    pub fn on_press_maybe(mut self, on_press: Option<Message>) -> Self {
+        self.on_press = on_press.map(OnPress::Direct);
+        self
     }
 }
 
 
-impl<Message, Renderer> Widget<Message, Theme, Renderer> for Key<Message>
+impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> for Key<'a, Message, Renderer>
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Message: Clone,
+    Renderer: 'a + iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Message: 'a + Clone,
 {
     fn size(&self) -> Size<Length> {
         Size {
@@ -114,38 +149,55 @@ where
 
     fn draw(
         &self,
-        _state: &Tree,
+        state: &Tree, // tree
         renderer: &mut Renderer,
-        _theme: &Theme,
-        _style: &renderer::Style,
+        theme: &Theme,
+        style: &renderer::Style,
         layout: Layout<'_>,
-        _cursor: mouse::Cursor,
+        cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
+        //let content_layout = layout.children().next().unwrap();
+        let is_mouse_over = cursor.is_over(bounds);
 
-        // draw background quad
-        renderer.fill_quad(
-            Quad {
-                bounds: layout.bounds(),
-                border: Border {
-                    color: Color::from_rgb(0.6, 0.8, 1.0),
-                    width: 1.0,
-                    radius: 0.0.into(),
+        
+        if is_mouse_over {
+
+            // draw background quad
+            renderer.fill_quad(
+                Quad {
+                    bounds: bounds,
+                    border: border::rounded(20), //Border::default(),
+                    shadow: Shadow::default(),
                 },
-                shadow: Shadow::default(),
-            },
-            if self.highlight {
-                Color::from_rgb(0.6, 0.8, 1.0)
-            } else {
-                Color::from_rgb(0.0, 0.2, 0.4)
-            },
-        );
+                if self.highlight {
+                    Color::from_rgba(1.0, 1.0, 1.0, 0.25)
+                } else {
+                    Color::from_rgb(0.0, 0.0, 0.0)
+                },
+            );
+        }
 
-        // draw text
+
+
+        // draw text like a button
+        // self.content.as_widget().draw(
+        //     &state.children[0],
+        //     renderer,
+        //     theme,
+        //     &renderer::Style {
+        //         text_color: style.text_color,
+        //     },
+        //     content_layout,
+        //     cursor,
+        //     &viewport,
+        // );
+
+        // draw text manually
         renderer.fill_text(
             Text {
-                content: "blah".into(),
+                content: "q".into(),
                 bounds: bounds.size(),
                 size: renderer.default_size(),
                 line_height: LineHeight::default(),
@@ -156,7 +208,7 @@ where
                 shaping: Shaping::default(),
             },
             bounds.center(),
-            Color::from_rgb(0.6, 0.8, 1.0),
+            Color::from_rgb(1.0, 1.0, 1.0),
             *viewport,
         );
     }
@@ -180,15 +232,74 @@ where
 
     fn on_event(
         &mut self,
-        _state: &mut Tree,
+        state: &mut Tree, // tree
         event: Event,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
-        _renderer: &Renderer,
-        _clipboard: &mut dyn Clipboard,
+        renderer: &Renderer,
+        clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
-        _viewport: &Rectangle,
+        viewport: &Rectangle,
     ) -> event::Status {
+
+        // // event from button.rs
+        // if let event::Status::Captured = self.content.as_widget_mut().on_event(
+        //     &mut state.children[0],
+        //     event.clone(),
+        //     layout.children().next().unwrap(),
+        //     cursor,
+        //     renderer,
+        //     clipboard,
+        //     shell,
+        //     viewport,
+        // ) {
+        //     return event::Status::Captured;
+        // }
+
+        // match event {
+        //     Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+        //     | Event::Touch(touch::Event::FingerPressed { .. }) => {
+        //         if self.on_press.is_some() {
+        //             let bounds = layout.bounds();
+
+        //             if cursor.is_over(bounds) {
+        //                 let state = state.state.downcast_mut::<State>();
+
+        //                 state.is_pressed = true;
+
+        //                 return event::Status::Captured;
+        //             }
+        //         }
+        //     }
+        //     Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
+        //     | Event::Touch(touch::Event::FingerLifted { .. }) => {
+        //         if let Some(on_press) = self.on_press.as_ref().map(OnPress::get)
+        //         {
+        //             let state = state.state.downcast_mut::<State>();
+
+        //             if state.is_pressed {
+        //                 state.is_pressed = false;
+
+        //                 let bounds = layout.bounds();
+
+        //                 if cursor.is_over(bounds) {
+        //                     shell.publish(on_press);
+        //                 }
+
+        //                 return event::Status::Captured;
+        //             }
+        //         }
+        //     }
+        //     Event::Touch(touch::Event::FingerLost { .. }) => {
+        //         let state = state.state.downcast_mut::<State>();
+
+        //         state.is_pressed = false;
+        //     }
+        //     _ => {}
+        // }
+
+        // event::Status::Ignored
+
 
         // cursor over event
         if cursor.is_over(layout.bounds()) {
@@ -196,7 +307,10 @@ where
             self.highlight = true;
             match event {
                 Event::Mouse(mouse::Event::ButtonPressed(_)) => {
-                    shell.publish(self.on_press.clone());
+                    if self.on_press.is_some() {
+                        //let result = Some(self.on_press);
+                        //shell.publish(Some(self.on_press).clone());
+                    }
                     event::Status::Captured
                 }
                 _ => event::Status::Ignored,
@@ -222,13 +336,23 @@ where
     }
 }
 
-
-impl<'a, Message: 'a, Renderer> From<Key<Message>> for Element<'a, Message, Theme, Renderer>
+impl<'a, Message, Renderer> From<Key<'a, Message, Renderer>>
+    for Element<'a, Message, Theme, Renderer>
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Message: Clone,
+    Renderer: 'a + iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Message: 'a + Clone,
 {
-    fn from(widget: Key<Message>) -> Self {
+    fn from(widget: Key<'a, Message, Renderer>) -> Self {
         Self::new(widget)
     }
 }
+
+// impl<'a, Message: 'a, Theme, Renderer> From<Key<'a, Message, Theme, Renderer>> for Element<'a, Message, Theme, Renderer>
+// where
+//     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+//     Message: Clone,
+// {
+//     fn from(widget: Key<'a, Message, Theme, Renderer>) -> Self {
+//         Self::new(widget)
+//     }
+// }

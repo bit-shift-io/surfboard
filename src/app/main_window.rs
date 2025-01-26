@@ -132,7 +132,8 @@ impl Application for MainWindow {
 
     fn style(&self, theme: &Self::Theme) -> iced_layershell::Appearance {
         iced_layershell::Appearance {
-            background_color: Color::TRANSPARENT,
+            //background_color: Color::TRANSPARENT,
+            background_color: Color::from_rgb(0.21, 0.23, 0.25),
             text_color: theme.palette().text,
         }
     }
