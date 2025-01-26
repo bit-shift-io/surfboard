@@ -9,7 +9,7 @@ use iced::{
         Shell, 
         Text, 
         Widget
-    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, touch, widget::{center, container, horizontal_space, mouse_area, stack, text::{LineHeight, Shaping, Wrapping}}, Border, Color, Element, Event, Length::{self, Fill}, Padding, Rectangle, Shadow, Size, Theme
+    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, touch, widget::{center, container, horizontal_space, mouse_area, stack, text}, Alignment, Border, Color, Element, Event, Length::{self, Fill}, Padding, Rectangle, Shadow, Size, Theme, Vector
 };
 
 use crate::app::*;
@@ -78,11 +78,22 @@ enum OnPress<'a, Message> {
 
 impl<'a, Message, Renderer> Key<'a, Message, Renderer>
 where
-    Renderer: iced::advanced::Renderer,
+    Renderer: 'a + iced::advanced::Renderer + iced::advanced::text::Renderer,
 {
     /// Creates a new [`Key`] with the given content.
     pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>,) -> Self {
         let content = content.into();
+        Self {
+            content,
+            mouse_over: false,
+            highlight: false,
+            on_press: None,
+        }
+    }
+
+    /// Creates a new [`Key`] with the given content.
+    pub fn from_str(s: &str,) -> Self {
+        let content = text(s.to_string()).center().into();
         Self {
             content,
             mouse_over: false,
@@ -133,19 +144,11 @@ where
 {
     fn size(&self) -> Size<Length> {
         Size {
-            width: Length::Shrink,
-            height: Length::Shrink,
+            width: Length::Fill, //Length::Fill, // fill portion etc is useful!
+            height: Length::Fill,
         }
     }
 
-    // fn layout(
-    //     &self,
-    //     _tree: &mut Tree,
-    //     _renderer: &Renderer,
-    //     _limits: &layout::Limits,
-    // ) -> layout::Node {
-    //     layout::Node::new(Size::new(100.0, 100.0))
-    // }
 
     fn children(&self) -> Vec<Tree> {
         vec![Tree::new(&self.content)]
@@ -157,17 +160,16 @@ where
         renderer: &Renderer,
         limits: &layout::Limits,
     ) -> layout::Node {
-
-        let size = self.content.as_widget().size_hint();
-        let width = size.width.fluid();
-        let height = size.height.fluid();
+        let max = limits.max();
+        //let size = self.content.as_widget().size_hint();
+        let width = max.width; //size.width.fluid();
+        let height = max.height; //size.height.fluid();
         let padding = Padding {
             top: 5.0,
             bottom: 5.0,
             right: 10.0,
             left: 10.0,
         };
-
         layout::padded(
             limits,
             width,
@@ -188,36 +190,42 @@ where
         state: &Tree, // tree
         renderer: &mut Renderer,
         theme: &Theme,
-        style: &renderer::Style,
+        _style: &renderer::Style,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
-        let content_layout = layout.children().next().unwrap(); // crash?
+        let content_layout = layout.children().next().unwrap();
         let is_mouse_over = cursor.is_over(bounds);
 
         
         if is_mouse_over {
-
             // draw background quad
             renderer.fill_quad(
                 Quad {
                     bounds: bounds,
-                    border: border::rounded(20), //Border::default(),
+                    border: border::rounded(10), //Border::default(),
                     shadow: Shadow::default(),
                 },
-                if self.highlight {
-                    Color::from_rgba(1.0, 1.0, 1.0, 0.25)
-                } else {
-                    Color::from_rgb(0.0, 0.0, 0.0)
-                },
+    Color::from_rgba(1.0, 1.0, 1.0, 0.15),
             );
+        } else {
+    //         // draw background quad - debug
+    //         renderer.fill_quad(
+    //             Quad {
+    //                 bounds: bounds,
+    //                 border: border::rounded(20), //Border::default(),
+    //                 shadow: Shadow::default(),
+    //             },
+    // Color::from_rgba(0.5, 1.0, 1.0, 0.25),
+    //         );
         }
 
 
 
-        // draw text like a button
+        // // draw text like a button
+        // // this should handle other content such as images etc
         self.content.as_widget().draw(
             &state.children[0],
             renderer,
@@ -225,7 +233,7 @@ where
             &renderer::Style {
                 text_color: Color::from_rgb(1.0, 1.0, 1.0), //style.text_color,
             },
-            content_layout,
+            content_layout, //content_layout,
             cursor,
             &viewport,
         );
@@ -247,6 +255,7 @@ where
         //     Color::from_rgb(1.0, 1.0, 1.0),
         //     *viewport,
         // );
+
     }
 
     /// cursor type
@@ -278,6 +287,8 @@ where
         viewport: &Rectangle,
     ) -> event::Status {
 
+        event::Status::Ignored
+        
         // // event from button.rs
         // if let event::Status::Captured = self.content.as_widget_mut().on_event(
         //     &mut state.children[0],
@@ -338,24 +349,24 @@ where
 
 
         // cursor over event
-        if cursor.is_over(layout.bounds()) {
-            self.mouse_over = true;
-            self.highlight = true;
-            match event {
-                Event::Mouse(mouse::Event::ButtonPressed(_)) => {
-                    if self.on_press.is_some() {
-                        //let result = Some(self.on_press);
-                        //shell.publish(Some(self.on_press).clone());
-                    }
-                    event::Status::Captured
-                }
-                _ => event::Status::Ignored,
-            }
-        } else {
-            self.mouse_over = false;
-            self.highlight = false;
-            event::Status::Ignored
-        }
+        // if cursor.is_over(layout.bounds()) {
+        //     self.mouse_over = true;
+        //     self.highlight = true;
+        //     match event {
+        //         Event::Mouse(mouse::Event::ButtonPressed(_)) => {
+        //             if self.on_press.is_some() {
+        //                 //let result = Some(self.on_press);
+        //                 //shell.publish(Some(self.on_press).clone());
+        //             }
+        //             event::Status::Captured
+        //         }
+        //         _ => event::Status::Ignored,
+        //     }
+        // } else {
+        //     self.mouse_over = false;
+        //     self.highlight = false;
+        //     event::Status::Ignored
+        // }
 
 
         // keyboard event

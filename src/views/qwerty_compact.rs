@@ -16,6 +16,8 @@ impl ViewTrait for MainView {
     }
 
     fn view(&self) -> iced::Element<MainMessage> {
+        //let t = Text::new("Go to the next page").center();
+        //let t2= text("blah").center();
 
         //let menu = Button::new(Text::new("Go to the next page"));
         //let col = Column::new().push(navigate);
@@ -23,54 +25,52 @@ impl ViewTrait for MainView {
 
         column![
             row![
-                //KeyButton::new(String::from("qwe")),
-                //Key::new("test").on_press(MainMessage::Debug(String::from("q"))),
-                Key::new("q").on_press(MainMessage::Debug(String::from("q"))),
-                Key::new("w").on_press(MainMessage::Debug(String::from("w"))),
-                Key::new("e").on_press(MainMessage::Debug(String::from("e"))),
-                Key::new("r").on_press(MainMessage::Debug(String::from("r"))),
-                Key::new("t").on_press(MainMessage::Debug(String::from("t"))),
-                Key::new("y").on_press(MainMessage::Debug(String::from("y"))),
-                Key::new("u").on_press(MainMessage::Debug(String::from("u"))),
-                Key::new("i").on_press(MainMessage::Debug(String::from("i"))),
-                Key::new("o").on_press(MainMessage::Debug(String::from("o"))),
-                Key::new("p").on_press(MainMessage::Debug(String::from("p"))),
-            ],
+                Key::from_str("q").on_press(MainMessage::Debug(String::from("q"))),
+                Key::from_str("w").on_press(MainMessage::Debug(String::from("w"))),
+                Key::from_str("e").on_press(MainMessage::Debug(String::from("e"))),
+                Key::from_str("r").on_press(MainMessage::Debug(String::from("r"))),
+                Key::from_str("t").on_press(MainMessage::Debug(String::from("t"))),
+                Key::from_str("y").on_press(MainMessage::Debug(String::from("y"))),
+                Key::from_str("u").on_press(MainMessage::Debug(String::from("u"))),
+                Key::from_str("i").on_press(MainMessage::Debug(String::from("i"))),
+                Key::from_str("o").on_press(MainMessage::Debug(String::from("o"))),
+                Key::from_str("p").on_press(MainMessage::Debug(String::from("p"))),
+            ].padding(0).width(Length::Fill).height(Length::Fill),
 
             row![
-                Key::new("a").on_press(MainMessage::Debug(String::from("q"))),
-                Key::new("s").on_press(MainMessage::Debug(String::from("w"))),
-                Key::new("d").on_press(MainMessage::Debug(String::from("e"))),
-                Key::new("f").on_press(MainMessage::Debug(String::from("r"))),
-                Key::new("g").on_press(MainMessage::Debug(String::from("t"))),
-                Key::new("h").on_press(MainMessage::Debug(String::from("y"))),
-                Key::new("j").on_press(MainMessage::Debug(String::from("u"))),
-                Key::new("k").on_press(MainMessage::Debug(String::from("i"))),
-                Key::new("l").on_press(MainMessage::Debug(String::from("o"))),
-            ],
+                Key::from_str("a").on_press(MainMessage::Debug(String::from("q"))),
+                Key::from_str("s").on_press(MainMessage::Debug(String::from("w"))),
+                Key::from_str("d").on_press(MainMessage::Debug(String::from("e"))),
+                Key::from_str("f").on_press(MainMessage::Debug(String::from("r"))),
+                Key::from_str("g").on_press(MainMessage::Debug(String::from("t"))),
+                Key::from_str("h").on_press(MainMessage::Debug(String::from("y"))),
+                Key::from_str("j").on_press(MainMessage::Debug(String::from("u"))),
+                Key::from_str("k").on_press(MainMessage::Debug(String::from("i"))),
+                Key::from_str("l").on_press(MainMessage::Debug(String::from("o"))),
+            ].padding(0).width(Length::Fill).height(Length::Fill),
 
             row![
-                Key::new("z").on_press(MainMessage::Debug(String::from("q"))),
-                Key::new("x").on_press(MainMessage::Debug(String::from("w"))),
-                Key::new("c").on_press(MainMessage::Debug(String::from("e"))),
-                Key::new("v").on_press(MainMessage::Debug(String::from("r"))),
-                Key::new("b").on_press(MainMessage::Debug(String::from("t"))),
-                Key::new("n").on_press(MainMessage::Debug(String::from("y"))),
-                Key::new("m").on_press(MainMessage::Debug(String::from("u"))),
-                Key::new("Enter").on_press(MainMessage::ChangeView(View::Settings)),
-            ],
+                Key::from_str("z").on_press(MainMessage::Debug(String::from("q"))),
+                Key::from_str("x").on_press(MainMessage::Debug(String::from("w"))),
+                Key::from_str("c").on_press(MainMessage::Debug(String::from("e"))),
+                Key::from_str("v").on_press(MainMessage::Debug(String::from("r"))),
+                Key::from_str("b").on_press(MainMessage::Debug(String::from("t"))),
+                Key::from_str("n").on_press(MainMessage::Debug(String::from("y"))),
+                Key::from_str("m").on_press(MainMessage::Debug(String::from("u"))),
+                Key::from_str("Enter").on_press(MainMessage::ChangeView(View::Settings)),
+            ].padding(0).width(Length::Fill).height(Length::Fill),
 
             row![
-                Key::new("@").on_press(MainMessage::ChangeView(View::Settings)), //.width(Length::Fill),
-                Key::new(":)").on_press(MainMessage::Debug(String::from("q"))), //.width(Length::Fill),
-                Key::new("     ").on_press(MainMessage::Debug(String::from("w"))), //.width(Length::Fill),
-                Key::new(".").on_press(MainMessage::Debug(String::from("e"))), //.width(Length::Fill),
-                Key::new(".").on_press(MainMessage::Debug(String::from("r"))), //.width(Length::Fill),
-                Key::new(">").on_press(MainMessage::Debug(String::from("t"))), //.width(Length::Fill),
-                Key::new("^").on_press(MainMessage::Debug(String::from("y"))), //.width(Length::Fill),
-                Key::new("<").on_press(MainMessage::Debug(String::from("u"))), //.width(Length::Fill),
-                Key::new("^").on_press(MainMessage::ChangeView(View::Settings)), //.width(Length::Fill),
-            ],
+                Key::from_str("@").on_press(MainMessage::ChangeView(View::Settings)),
+                Key::from_str(":)").on_press(MainMessage::Debug(String::from("q"))),
+                Key::from_str("     ").on_press(MainMessage::Debug(String::from("w"))),
+                Key::from_str(".").on_press(MainMessage::Debug(String::from("e"))),
+                Key::from_str(".").on_press(MainMessage::Debug(String::from("r"))),
+                Key::from_str(">").on_press(MainMessage::Debug(String::from("t"))),
+                Key::from_str("^").on_press(MainMessage::Debug(String::from("y"))),
+                Key::from_str("<").on_press(MainMessage::Debug(String::from("u"))),
+                Key::from_str("^").on_press(MainMessage::ChangeView(View::Settings)),
+            ].padding(0).width(Length::Fill).height(Length::Fill),
 
         ]
         .padding(0)
