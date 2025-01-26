@@ -24,14 +24,14 @@ impl ViewTrait for MainView {
         column![
             row![
                 //KeyButton::new(String::from("qwe")),
-                key(
-                    "Hover and click me!",
-                    Some("(I'm the footnote)"),
-                    MainMessage::Debug(String::from("enter")),
-                    MainMessage::Debug(String::from("exit")),
-                    MainMessage::Debug(String::from("press")),
-                    MainMessage::Debug(String::from("release")),
-                ),
+                Key::new(MainMessage::Debug(String::from("q"))),
+                //     "q",
+                //     Some("(I'm the footnote)"),
+                //     MainMessage::Debug(String::from("enter")),
+                //     MainMessage::Debug(String::from("exit")),
+                //     MainMessage::Debug(String::from("press")),
+                //     MainMessage::Debug(String::from("release")),
+                // ),
                 button("q").on_press(MainMessage::Debug(String::from("q"))),
                 button("w").on_press(MainMessage::Debug(String::from("w"))),
                 button("e").on_press(MainMessage::Debug(String::from("e"))),
