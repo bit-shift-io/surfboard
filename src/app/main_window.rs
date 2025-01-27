@@ -17,8 +17,11 @@ pub struct MainWindow {
     screen_edge: ScreenEdge,
     theme: iced::Theme,
     dark_mode: bool,
+    lmouse_down: bool,
+    rmouse_down: bool,
     current_view: View, // enum
     views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
+    points: Vec<Point>,
 }
 
 
@@ -71,8 +74,11 @@ impl Default for MainWindow {
             screen_edge: ScreenEdge::Top,
             theme: iced::Theme::Light,
             dark_mode: true,
+            lmouse_down: false,
+            rmouse_down: false,
             current_view: View::Main,
             views,
+            points: Vec::new(),
         }
     }
 }
@@ -98,7 +104,7 @@ impl Application for MainWindow {
             true => {
                 return stack![
                     self.current_view().view(),
-                    Canvas::new(Gesture::default()).width(Length::Fill).height(Length::Fill)
+                    Canvas::new(Gesture::new(&self.points)).width(Length::Fill).height(Length::Fill)
                 ]
                 .into()
             }
@@ -121,7 +127,46 @@ impl Application for MainWindow {
                 info!("{s}");
             }
             MainMessage::IcedEvent(event) => {
-                //info!("{event:?}");
+                match event {
+                    Event::Mouse(event) => {
+                        match event {
+                            mouse::Event::ButtonPressed(button) => {
+                                match button {
+                                    mouse::Button::Left => {
+                                        self.points.clear();
+                                        self.lmouse_down = true;
+                                    }
+                                    mouse::Button::Right => {
+                                        self.rmouse_down = true;
+                                    }
+                                    _ => {info!("Unhandled mouse button")}
+                                }
+                            }
+                            mouse::Event::ButtonReleased(button) => {
+                                match button {
+                                    mouse::Button::Left => {
+                                        self.lmouse_down = false;
+                                    }
+                                    mouse::Button::Right => {
+                                        self.rmouse_down = false;
+                                    }
+                                    _ => {info!("Unhandled mouse release")}
+                                }
+                            }
+                            mouse::Event::CursorMoved { position } => {
+                                if self.lmouse_down {
+                                    self.points.push(position);
+                                }
+                            }
+                            _ => {info!("Unhandled event")}
+                            
+                        }
+                    }
+                    //Event::Keyboard(event) => todo!(),
+                    //Event::Window(event) => todo!(),
+                    //Event::Touch(event) => todo!(),
+                    _ => {}, // info!("event: {event:?}");
+                }
             }
             MainMessage::ChangeScreenEdge(screen_edge) => {
                 self.screen_edge = screen_edge;
@@ -161,6 +206,7 @@ impl Application for MainWindow {
         }
         Task::none()
     }
+
 
     fn style(&self, theme: &Self::Theme) -> iced_layershell::Appearance {
         iced_layershell::Appearance {
@@ -215,20 +261,28 @@ impl Application for MainWindow {
 
 
 
-struct Gesture {
-    points: Vec<Point>,
+struct Gesture<'a> {
+    points: &'a Vec<Point>,
 }
 
-impl Default for Gesture {
-    fn default() -> Self {
-        let points = vec![Point::new(0.0, 0.0), Point::new(100.0, 100.0), Point::new(400.0, 100.0)];
+impl<'a> Gesture<'a> {
+    pub fn new(points: &'a Vec<Point>) -> Self {
         Gesture {
             points,
         }
     }
 }
 
-impl<Message> Program<Message> for Gesture {
+// impl Default for Gesture {
+//     fn default() -> Self {
+//         let points = vec![Point::new(0.0, 0.0), Point::new(100.0, 100.0), Point::new(400.0, 100.0)];
+//         Gesture {
+//             points,
+//         }
+//     }
+// }
+
+impl<'a, Message> Program<Message> for Gesture<'a> {
     type State = ();
 
     // fn update(
@@ -268,19 +322,52 @@ impl<Message> Program<Message> for Gesture {
         let mut frame = Frame::new(renderer, bounds.size());
 
         if self.points.len() > 1 {
+            // last n points
+            let last_points: Vec<_> = self.points.iter().rev().take(100).cloned().collect();
+
             // Create the path using a Builder closure
             let path = Path::new(|builder| {
-                builder.move_to(self.points[0]);
-                for point in &self.points[1..] {
-                    builder.line_to(*point);
+                builder.move_to(last_points[0]);
+
+                // quadratic_curve_to
+                for (i, point) in last_points.iter().enumerate().skip(1).step_by(4) {
+                    let prev_point = last_points.get(i - 1).unwrap();
+                    let control_point = Point::new(
+                        (prev_point.x + point.x) / 2.0,
+                        (prev_point.y + point.y) / 2.0,
+                    );
+                    builder.quadratic_curve_to(control_point, *point);
                 }
+
+                // bezier_curve_to
+                // for (i, point) in last_points.iter().enumerate().skip(1).step_by(4) {
+                //     let prev_point = last_points.get(i - 1).unwrap();
+                //     let control_point = Point::new(
+                //         (prev_point.x + point.x) / 2.0,
+                //         (prev_point.y + point.y) / 2.0,
+                //     );
+                //     builder.bezier_curve_to(
+                //         control_point,
+                //         Point::new(
+                //             (control_point.x + point.x) / 2.0,
+                //             (control_point.y + point.y) / 2.0,
+                //         ),
+                //         *point,
+                //     );
+                // }
+
+                // line to is chunky
+                // for (i, point) in self.points.iter().enumerate().skip(1).step_by(3) { // skip every n points
+                //     builder.line_to(*point);
+                //     builder.c
+                // }
             });
 
             frame.stroke(
             &path,
             Stroke {
-                style: Color::from_rgba(0.6, 0.8, 1.0, 0.5).into(),
-                width: 20.0,
+                style: Color::from_rgba(0.6, 0.8, 1.0, 0.3).into(),
+                width: 8.0,
                 ..Default::default()
             },
         );

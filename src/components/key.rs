@@ -292,7 +292,8 @@ where
 
                         state.is_pressed = true;
 
-                        return event::Status::Captured;
+                        // comment the following to allow gestures to work
+                        //return event::Status::Captured;
                     }
                 }
             }
@@ -311,7 +312,8 @@ where
                             shell.publish(on_press);
                         }
 
-                        return event::Status::Captured;
+                        // comment the following to allow gestures to work
+                        //return event::Status::Captured;
                     }
                 }
             }
