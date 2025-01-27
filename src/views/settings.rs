@@ -69,6 +69,10 @@ impl ViewTrait for SettingsView {
     fn class(&self) -> View {
         View::Settings
     }
+    
+    fn has_gesture(&self) -> bool {
+        false
+    }
 }
 
 

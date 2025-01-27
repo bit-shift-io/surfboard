@@ -1,7 +1,14 @@
-use iced::{event, Color, Element, Event, Task as Command, Theme};
+use iced::{event, widget::{canvas, stack}, Color, Element, Event, Task, Theme};
 use iced_layershell::{actions::LayershellCustomActions, application, reexport::Anchor, settings::{LayerShellSettings, Settings}, to_layer_message, Application};
-
-use crate::views::*;
+use iced::{
+    mouse,
+    widget::{
+        canvas::{Frame, Geometry, Path, Program, Stroke},
+        column, Canvas,
+    },
+    Alignment, Length, Point, Rectangle, Renderer, Vector,
+};
+use crate::{components::*, views::*};
 use super::*;
 
 
@@ -78,19 +85,31 @@ impl Application for MainWindow {
     type Executor = iced::executor::Default;
 
     /// Create a new instance of [`MainWindow`].
-    fn new(_flags: ()) -> (Self, Command<Self::Message>) {
+    fn new(_flags: ()) -> (Self, Task<Self::Message>) {
         let mut default_window = Self::default();
         default_window.windowed = false;
-        (default_window, Command::none())
+        (default_window, Task::none())
     }
     
 
     fn view(&self) -> Element<Self::Message> {
-        self.current_view().view()
+        let has_gesture = self.current_view().has_gesture();
+        match has_gesture {
+            true => {
+                return stack![
+                    self.current_view().view(),
+                    Canvas::new(Gesture::default()).width(Length::Fill).height(Length::Fill)
+                ]
+                .into()
+            }
+            false => {
+                return self.current_view().view()
+            }
+        }
     }
 
 
-    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
         match message {
             MainMessage::Debug(s) => {
                 info!("{s}");
@@ -108,25 +127,25 @@ impl Application for MainWindow {
                 self.screen_edge = screen_edge;
                 match screen_edge {
                     ScreenEdge::Left => {
-                        return Command::done(MainMessage::AnchorSizeChange(
+                        return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Left | Anchor::Top | Anchor::Bottom,
                         (400, 0),
                         ))
                     }
                     ScreenEdge::Right => {
-                        return Command::done(MainMessage::AnchorSizeChange(
+                        return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Right | Anchor::Top | Anchor::Bottom,
                         (400, 0),
                         ))
                     }
                     ScreenEdge::Bottom => {
-                        return Command::done(MainMessage::AnchorSizeChange(
+                        return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Bottom | Anchor::Left | Anchor::Right,
                         (0, 400),
                         ))
                     }
                     ScreenEdge::Top => {
-                        return Command::done(MainMessage::AnchorSizeChange(
+                        return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Top | Anchor::Left | Anchor::Right,
                         (0, 400),
                         ))
@@ -140,7 +159,7 @@ impl Application for MainWindow {
                 //view.update(&boxed_message);
             }
         }
-        Command::none()
+        Task::none()
     }
 
     fn style(&self, theme: &Self::Theme) -> iced_layershell::Appearance {
@@ -192,4 +211,103 @@ impl Application for MainWindow {
     //         renderer_settings,
     //     )
     // }
+}
+
+
+
+struct Gesture {
+    points: Vec<Point>,
+}
+
+impl Default for Gesture {
+    fn default() -> Self {
+        let points = vec![Point::new(0.0, 0.0), Point::new(100.0, 100.0), Point::new(400.0, 100.0)];
+        Gesture {
+            points,
+        }
+    }
+}
+
+impl<Message> Program<Message> for Gesture {
+    type State = ();
+
+    // fn update(
+    //     &self,
+    //     state: &mut Self::State,
+    //     event: Event,
+    //     bounds: Rectangle,
+    //     cursor: mouse::Cursor,
+    // ) -> Option<canvas::Action<Curve>> {
+    //     let cursor_position = cursor.position_in(bounds)?;
+    //     info!("{cursor_position}");
+
+
+    //     match event {
+    //         Event::Mouse(mouse::Event::ButtonPressed(
+    //             mouse::Button::Left,
+    //         )) => {
+    //             }
+    //         Event::Mouse(mouse::Event::CursorMoved { .. })
+    //         {
+    //             if !self.points.is_empty() {
+    //                 self.points.push(point);
+    //             }
+    //         }
+    //         _ => None,
+    //     }
+    // }
+
+    fn draw(
+        &self,
+        _state: &Self::State,
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<Geometry> {
+        let mut frame = Frame::new(renderer, bounds.size());
+
+        if self.points.len() > 1 {
+            // Create the path using a Builder closure
+            let path = Path::new(|builder| {
+                builder.move_to(self.points[0]);
+                for point in &self.points[1..] {
+                    builder.line_to(*point);
+                }
+            });
+
+            frame.stroke(
+            &path,
+            Stroke {
+                style: Color::from_rgba(0.6, 0.8, 1.0, 0.5).into(),
+                width: 20.0,
+                ..Default::default()
+            },
+        );
+        }
+
+        //frame.into_geometry()
+
+        
+
+        // frame.fill(
+        //     &Path::circle(frame.center(), frame.width().min(frame.height()) / 4.0),
+        //     Color::from_rgb(0.6, 0.8, 1.0),
+        // );
+
+        // frame.stroke(
+        //     &Path::line(
+        //         frame.center() + Vector::new(-250.0, 100.0),
+        //         frame.center() + Vector::new(250.0, -100.0),
+        //     ),
+        //     Stroke {
+        //         style: Color::from_rgba(0.6, 0.8, 1.0, 0.5).into(),
+        //         width: 20.0,
+        //         ..Default::default()
+        //     },
+        // );
+
+        vec![frame.into_geometry()]
+    }
+
 }

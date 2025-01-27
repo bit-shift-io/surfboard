@@ -15,7 +15,7 @@ iced_renderer = "0.13.0"
 
 [features]
 default = [
-#    "iced/lazy",
+    "iced/canvas",
     "iced/advanced",
     ]
 
