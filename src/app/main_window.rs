@@ -8,6 +8,7 @@ use iced::{
     },
     Alignment, Length, Point, Rectangle, Renderer, Vector,
 };
+use iced::time::Instant; // wrapper for std time
 use crate::{components::*, views::*};
 use super::*;
 
@@ -21,7 +22,7 @@ pub struct MainWindow {
     rmouse_down: bool,
     current_view: View, // enum
     views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
-    points: Vec<Point>,
+    gesture_data: Vec<GestureData>,
 }
 
 
@@ -78,7 +79,7 @@ impl Default for MainWindow {
             rmouse_down: false,
             current_view: View::Main,
             views,
-            points: Vec::new(),
+            gesture_data: Vec::new(),
         }
     }
 }
@@ -104,7 +105,7 @@ impl Application for MainWindow {
             true => {
                 return stack![
                     self.current_view().view(),
-                    Canvas::new(Gesture::new(&self.points)).width(Length::Fill).height(Length::Fill)
+                    Canvas::new(Gesture::new(&self.gesture_data)).width(Length::Fill).height(Length::Fill)
                 ]
                 .into()
             }
@@ -133,7 +134,7 @@ impl Application for MainWindow {
                             mouse::Event::ButtonPressed(button) => {
                                 match button {
                                     mouse::Button::Left => {
-                                        self.points.clear();
+                                        self.gesture_data.clear();
                                         self.lmouse_down = true;
                                     }
                                     mouse::Button::Right => {
@@ -155,7 +156,8 @@ impl Application for MainWindow {
                             }
                             mouse::Event::CursorMoved { position } => {
                                 if self.lmouse_down {
-                                    self.points.push(position);
+                                    let data = GestureData{position, time: std::time::Instant::now()};
+                                    self.gesture_data.push(data);
                                 }
                             }
                             _ => {info!("Unhandled event")}
@@ -260,15 +262,20 @@ impl Application for MainWindow {
 }
 
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct GestureData {
+    position: Point,
+    time: Instant,
+}
 
 struct Gesture<'a> {
-    points: &'a Vec<Point>,
+    gesture_data: &'a Vec<GestureData>,
 }
 
 impl<'a> Gesture<'a> {
-    pub fn new(points: &'a Vec<Point>) -> Self {
+    pub fn new(points: &'a Vec<GestureData>) -> Self {
         Gesture {
-            points,
+            gesture_data: points,
         }
     }
 }
@@ -321,22 +328,23 @@ impl<'a, Message> Program<Message> for Gesture<'a> {
     ) -> Vec<Geometry> {
         let mut frame = Frame::new(renderer, bounds.size());
 
-        if self.points.len() > 1 {
+        if self.gesture_data.len() > 1 {
             // last n points
-            let last_points: Vec<_> = self.points.iter().rev().take(100).cloned().collect();
+            //let last_gesture_data: Vec<_> = self.gesture_data.iter().rev().take(100).cloned().collect();
 
             // Create the path using a Builder closure
+            // create the line in reverse order
             let path = Path::new(|builder| {
-                builder.move_to(last_points[0]);
-
+                builder.move_to(self.gesture_data.last().unwrap().position);
+                let mut prev_point = self.gesture_data.last().unwrap().position;
                 // quadratic_curve_to
-                for (i, point) in last_points.iter().enumerate().skip(1).step_by(4) {
-                    let prev_point = last_points.get(i - 1).unwrap();
+                for data in self.gesture_data.iter().rev().skip(1).step_by(4) {
                     let control_point = Point::new(
-                        (prev_point.x + point.x) / 2.0,
-                        (prev_point.y + point.y) / 2.0,
+                        (prev_point.x + data.position.x) / 2.0,
+                        (prev_point.y + data.position.y) / 2.0,
                     );
-                    builder.quadratic_curve_to(control_point, *point);
+                    builder.quadratic_curve_to(control_point, data.position);
+                    prev_point = data.position;
                 }
 
                 // bezier_curve_to
