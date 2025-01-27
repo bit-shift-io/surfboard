@@ -3,13 +3,13 @@ use iced::{
         layout, 
         mouse, 
         renderer::{self, Quad}, 
-        widget::Tree, 
+        widget::{tree, Tree}, 
         Clipboard, 
         Layout, 
         Shell, 
         Text, 
         Widget
-    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, touch, widget::{center, container, horizontal_space, mouse_area, stack, text}, Alignment, Border, Color, Element, Event, Length::{self, Fill}, Padding, Rectangle, Shadow, Size, Theme, Vector
+    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, overlay, touch, widget::{center, container, horizontal_space, mouse_area, stack, text}, Alignment, Border, Color, Element, Event, Length::{self, Fill}, Padding, Rectangle, Shadow, Size, Theme, Vector
 };
 
 use crate::app::*;
@@ -19,47 +19,11 @@ use crate::app::*;
 // https://docs.iced.rs/src/iced_widget/lazy/responsive.rs.html#25-30
 // https://docs.iced.rs/src/iced_widget/button.rs.html#72
 // https://github.com/iced-rs/iced/tree/master/examples/custom_widget
-
-
 // https://discourse.iced.rs/t/how-to-make-an-advanced-button-widget/826/2
 
 
-// pub fn key<'a, Message>(
-//     content: &'a str,
-//     //footnote: Option<&'a str>,
-//     on_enter: Message,
-//     on_exit: Message,
-//     on_press: Message,
-//     on_release: Message,
-// ) -> Element<'a, Message>
-// where
-//     Message: Clone + 'static,
-// {
-//     // let footnote = container(match footnote {
-//     //     Some(footnote) => text(footnote).size(12).into(),
-//     //     None => Element::from(horizontal_space()),
-//     // })
-//     // .align_bottom(Fill)
-//     // .align_right(Fill)
-//     // .width(Fill)
-//     // .height(Fill)
-//     // .padding(2);
-
-//     container(
-//         mouse_area(stack![
-//             center(text(content).size(16)).width(Fill).height(Fill),
-//             //footnote
-//         ])
-//         .on_enter(on_enter)
-//         .on_exit(on_exit)
-//         .on_press(on_press)
-//         .on_release(on_release),
-//     )
-//     .style(container::rounded_box)
-//     .into()
-// }
-
-
+/// Key is a button that stores the visual elements of the widget
+/// This is a copy of button.rs but with some extra features
 pub struct Key<'a, Message, Renderer = iced::Renderer> 
 where
     Renderer: iced::advanced::Renderer,
@@ -70,11 +34,27 @@ where
     on_press: Option<OnPress<'a, Message>>,
 }
 
+
+// State is the internal state of the button
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+struct State {
+    is_pressed: bool,
+}
+
+/// OnPress stores the message or closure that will be produced when the [`Key`] is pressed.
 enum OnPress<'a, Message> {
     Direct(Message),
     Closure(Box<dyn Fn() -> Message + 'a>),
 }
 
+impl<'a, Message: Clone> OnPress<'a, Message> {
+    fn get(&self) -> Message {
+        match self {
+            OnPress::Direct(message) => message.clone(),
+            OnPress::Closure(f) => f(),
+        }
+    }
+}
 
 impl<'a, Message, Renderer> Key<'a, Message, Renderer>
 where
@@ -137,11 +117,21 @@ where
 }
 
 
-impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> for Key<'a, Message, Renderer>
+/// The meat & potatoes of the widget
+impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> 
+    for Key<'a, Message, Renderer>
 where
     Renderer: 'a + iced::advanced::Renderer + iced::advanced::text::Renderer,
     Message: 'a + Clone,
 {
+    fn tag(&self) -> tree::Tag {
+        tree::Tag::of::<State>()
+    }
+
+    fn state(&self) -> tree::State {
+        tree::State::new(State::default())
+    }
+
     fn size(&self) -> Size<Length> {
         Size {
             width: Length::Fill, //Length::Fill, // fill portion etc is useful!
@@ -210,19 +200,7 @@ where
                 },
     Color::from_rgba(1.0, 1.0, 1.0, 0.15),
             );
-        } else {
-    //         // draw background quad - debug
-    //         renderer.fill_quad(
-    //             Quad {
-    //                 bounds: bounds,
-    //                 border: border::rounded(20), //Border::default(),
-    //                 shadow: Shadow::default(),
-    //             },
-    // Color::from_rgba(0.5, 1.0, 1.0, 0.25),
-    //         );
         }
-
-
 
         // // draw text like a button
         // // this should handle other content such as images etc
@@ -287,65 +265,65 @@ where
         viewport: &Rectangle,
     ) -> event::Status {
 
-        event::Status::Ignored
+        //event::Status::Ignored
         
         // // event from button.rs
-        // if let event::Status::Captured = self.content.as_widget_mut().on_event(
-        //     &mut state.children[0],
-        //     event.clone(),
-        //     layout.children().next().unwrap(),
-        //     cursor,
-        //     renderer,
-        //     clipboard,
-        //     shell,
-        //     viewport,
-        // ) {
-        //     return event::Status::Captured;
-        // }
+        if let event::Status::Captured = self.content.as_widget_mut().on_event(
+            &mut state.children[0],
+            event.clone(),
+            layout.children().next().unwrap(),
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            viewport,
+        ) {
+            return event::Status::Captured;
+        }
 
-        // match event {
-        //     Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
-        //     | Event::Touch(touch::Event::FingerPressed { .. }) => {
-        //         if self.on_press.is_some() {
-        //             let bounds = layout.bounds();
+        match event {
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerPressed { .. }) => {
+                if self.on_press.is_some() {
+                    let bounds = layout.bounds();
 
-        //             if cursor.is_over(bounds) {
-        //                 let state = state.state.downcast_mut::<State>();
+                    if cursor.is_over(bounds) {
+                        let state = state.state.downcast_mut::<State>();
 
-        //                 state.is_pressed = true;
+                        state.is_pressed = true;
 
-        //                 return event::Status::Captured;
-        //             }
-        //         }
-        //     }
-        //     Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
-        //     | Event::Touch(touch::Event::FingerLifted { .. }) => {
-        //         if let Some(on_press) = self.on_press.as_ref().map(OnPress::get)
-        //         {
-        //             let state = state.state.downcast_mut::<State>();
+                        return event::Status::Captured;
+                    }
+                }
+            }
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerLifted { .. }) => {
+                if let Some(on_press) = self.on_press.as_ref().map(OnPress::get)
+                {
+                    let state = state.state.downcast_mut::<State>();
 
-        //             if state.is_pressed {
-        //                 state.is_pressed = false;
+                    if state.is_pressed {
+                        state.is_pressed = false;
 
-        //                 let bounds = layout.bounds();
+                        let bounds = layout.bounds();
 
-        //                 if cursor.is_over(bounds) {
-        //                     shell.publish(on_press);
-        //                 }
+                        if cursor.is_over(bounds) {
+                            shell.publish(on_press);
+                        }
 
-        //                 return event::Status::Captured;
-        //             }
-        //         }
-        //     }
-        //     Event::Touch(touch::Event::FingerLost { .. }) => {
-        //         let state = state.state.downcast_mut::<State>();
+                        return event::Status::Captured;
+                    }
+                }
+            }
+            Event::Touch(touch::Event::FingerLost { .. }) => {
+                let state = state.state.downcast_mut::<State>();
 
-        //         state.is_pressed = false;
-        //     }
-        //     _ => {}
-        // }
+                state.is_pressed = false;
+            }
+            _ => {}
+        }
 
-        // event::Status::Ignored
+        event::Status::Ignored
 
 
         // cursor over event
@@ -381,6 +359,49 @@ where
         //     _ => event::Status::Ignored,
         // }
     }
+    
+    fn size_hint(&self) -> Size<Length> {
+        self.size()
+    }
+    
+    /// from button.rs
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(std::slice::from_ref(&self.content));
+    }
+
+    /// from button.rs
+    fn operate(
+        &self,
+        state: &mut Tree, // tree
+        layout: Layout<'_>,
+        renderer: &Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        operation.container(None, layout.bounds(), &mut |operation| {
+            self.content.as_widget().operate(
+                &mut state.children[0],
+                layout.children().next().unwrap(),
+                renderer,
+                operation,
+            );
+        });
+    }
+    
+    /// from button.rs
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut Tree,
+        layout: Layout<'_>,
+        renderer: &Renderer,
+        translation: Vector,
+    ) -> Option<overlay::Element<'b, Message, Theme, Renderer>> {
+        self.content.as_widget_mut().overlay(
+            &mut tree.children[0],
+            layout.children().next().unwrap(),
+            renderer,
+            translation,
+        )
+    }
 }
 
 impl<'a, Message, Renderer> From<Key<'a, Message, Renderer>>
@@ -393,3 +414,4 @@ where
         Self::new(widget)
     }
 }
+

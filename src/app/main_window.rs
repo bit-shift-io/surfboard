@@ -1,5 +1,5 @@
 use iced::{event, Color, Element, Event, Task as Command, Theme};
-use iced_layershell::{reexport::Anchor, to_layer_message, Application};
+use iced_layershell::{actions::LayershellCustomActions, application, reexport::Anchor, settings::{LayerShellSettings, Settings}, to_layer_message, Application};
 
 use crate::views::*;
 use super::*;
@@ -146,7 +146,7 @@ impl Application for MainWindow {
     fn style(&self, theme: &Self::Theme) -> iced_layershell::Appearance {
         iced_layershell::Appearance {
             //background_color: Color::TRANSPARENT,
-            background_color: Color::from_rgb(0.21, 0.23, 0.25),
+            background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.5),
             text_color: theme.palette().text,
         }
     }
@@ -158,4 +158,38 @@ impl Application for MainWindow {
     fn subscription(&self) -> iced::Subscription<Self::Message> {
         event::listen().map(MainMessage::IcedEvent)
     }
+
+    // fn run(settings: Settings<Self::Flags>) -> iced_layershell::Result
+    // where Self: 'static,
+    //       Self::Message: 'static + TryInto<LayershellCustomActions, Error = Self::Message> 
+    // {
+    //     let settings = Settings {
+    //         layer_settings: LayerShellSettings {
+    //             size: Some((600, 250)),
+    //             //exclusive_zone: 250,
+    //             anchor: Anchor::Bottom | Anchor::Right,
+    //             //start_mode,
+    //             margin: (10, 10, 10, 10),
+    //             ..Default::default()
+    //         },
+    //         ..Default::default()
+    //     };
+
+    //     #[allow(clippy::needless_update)]
+    //     let renderer_settings = iced_graphics::Settings {
+    //         default_font: settings.default_font,
+    //         default_text_size: settings.default_text_size,
+    //         antialiasing: if settings.antialiasing {
+    //             Some(iced_graphics::Antialiasing::MSAAx4)
+    //         } else {
+    //             None
+    //         },
+    //         ..iced_graphics::Settings::default()
+    //     };
+
+    //     application::run::<Instance<Self>, Self::Executor, iced_renderer::Compositor>(
+    //         settings,
+    //         renderer_settings,
+    //     )
+    // }
 }
