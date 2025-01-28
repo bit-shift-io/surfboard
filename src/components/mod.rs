@@ -1,6 +1,6 @@
 pub mod key;
-//pub mod gesture_canvas;
+pub mod gesture;
 
 // re-export
 pub use super::components::key::*;
-//pub use super::components::gesture_canvas::*;
+pub use super::components::gesture::*;
