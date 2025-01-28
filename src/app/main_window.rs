@@ -1,16 +1,28 @@
-use iced::{event, widget::{canvas, stack}, Color, Element, Event, Task, Theme};
-use iced_layershell::{actions::LayershellCustomActions, application, reexport::Anchor, settings::{LayerShellSettings, Settings}, to_layer_message, Application};
 use iced::{
+    time::Instant, 
+    event, 
+    Color, 
+    Element, 
+    Event, 
+    Task, 
+    Theme,
     mouse,
     widget::{
-        canvas::{Frame, Geometry, Path, Program, Stroke},
-        column, Canvas,
+        stack, 
+        Canvas,
     },
-    Alignment, Length, Point, Rectangle, Renderer, Vector,
+    Length,
 };
-use iced::time::Instant; // wrapper for std time
-use crate::{components::*, views::*};
-use super::*;
+use iced_layershell::{
+    reexport::Anchor, 
+    to_layer_message, 
+    Application
+};
+use crate::{
+    components::*, 
+    views::*,
+    *,
+};
 
 
 pub struct MainWindow {
@@ -50,10 +62,6 @@ pub enum View {
 
 
 impl MainWindow {
-    pub fn title(&self) -> String {
-        format!("surfboard")
-    }
-
     fn current_view(&self) -> &Box<dyn ViewTrait> {
         self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
@@ -156,7 +164,7 @@ impl Application for MainWindow {
                             }
                             mouse::Event::CursorMoved { position } => {
                                 if self.lmouse_down {
-                                    let data = GestureData{position, time: std::time::Instant::now()};
+                                    let data = GestureData{position, time: Instant::now()};
                                     self.gesture_data.push(data);
                                 }
                             }

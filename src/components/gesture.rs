@@ -1,14 +1,18 @@
-use iced::{event, widget::{canvas, stack}, Color, Element, Event, Task, Theme};
-use iced_layershell::{actions::LayershellCustomActions, application, reexport::Anchor, settings::{LayerShellSettings, Settings}, to_layer_message, Application};
 use iced::{
     mouse,
-    widget::{
-        canvas::{Frame, Geometry, Path, Program, Stroke},
-        column, Canvas,
-    },
-    Alignment, Length, Point, Rectangle, Renderer, Vector,
+    widget::canvas::{
+        Frame, 
+        Geometry, 
+        Path, 
+        Program, 
+        Stroke},
+    Point, 
+    Rectangle, 
+    Renderer,
+    time::Instant,
+    Color,
+    Theme
 };
-use iced::time::Instant; // wrapper for std time
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]

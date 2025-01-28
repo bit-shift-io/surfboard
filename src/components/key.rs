@@ -7,12 +7,25 @@ use iced::{
         Clipboard, 
         Layout, 
         Shell, 
-        Text, 
         Widget
-    }, alignment::{Horizontal, Vertical}, border, event, keyboard::{self, key::Named}, overlay, touch, widget::{center, container, horizontal_space, mouse_area, stack, text}, Alignment, Border, Color, Element, Event, Length::{self, Fill}, Padding, Rectangle, Shadow, Size, Theme, Vector
+    }, 
+    border, 
+    event, 
+    overlay, 
+    touch, 
+    widget::text, 
+    Color, 
+    Element, 
+    Event, 
+    Length, 
+    Padding, 
+    Rectangle, 
+    Shadow, 
+    Size, 
+    Theme, 
+    Vector
 };
 
-use crate::app::*;
 
 // https://giesch.dev/iced-hoverable/
 // https://docs.iced.rs/iced/widget/struct.Responsive.html
