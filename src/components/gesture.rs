@@ -162,8 +162,8 @@ impl<'a> Gesture<'a> {
                 Stroke {
                     style: Color::from_rgba(0.3, 0.1, 0.8, opacity).into(),
                     width,
-                    line_cap: LineCap::Square,
-                    line_join: LineJoin::Miter,
+                    line_cap: LineCap::Butt,
+                    line_join: LineJoin::Bevel,
                     ..Default::default()
                 },
             );

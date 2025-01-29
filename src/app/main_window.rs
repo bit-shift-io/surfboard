@@ -68,7 +68,7 @@ impl MainWindow {
             // distance check with the back item
             let prev = self.gesture_data.back().unwrap();
             let distance = Point::distance(&prev.point, position);
-            if distance < 30.0 {
+            if distance < 20.0 {
                 return;
             }
             
