@@ -1,10 +1,9 @@
 use std::collections::VecDeque;
-
 use iced::{
     event, mouse, time::Instant, widget::{
         stack, 
         Canvas,
-    }, Color, Element, Event, Length, Point, Task, Theme
+    }, Color, Element, Event, Length, Point, Task, Theme, touch, Subscription
 };
 use iced_layershell::{
     reexport::Anchor, 
@@ -25,6 +24,7 @@ pub struct MainWindow {
     dark_mode: bool,
     lmouse_down: bool,
     rmouse_down: bool,
+    finger_presses: Vec<(u64, Point, Instant)>,
     current_view: View, // enum
     views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
     gesture_data: VecDeque<GestureData>,
@@ -94,7 +94,90 @@ impl MainWindow {
             instant: Instant::now(),
         });
     }
+
+    fn handle_input_event(&mut self, event: &Event) {
+
+        match event {
+            Event::Mouse(event) => {
+                match event {
+                    mouse::Event::ButtonPressed(button) => {
+                        match button {
+                            mouse::Button::Left => {
+                                self.gesture_data.clear();
+                                self.lmouse_down = true;
+                            }
+                            mouse::Button::Right => {
+                                self.rmouse_down = true;
+                            }
+                            _ => {info!("Unhandled mouse button")}
+                        }
+                    }
+                    mouse::Event::ButtonReleased(button) => {
+                        match button {
+                            mouse::Button::Left => {
+                                self.lmouse_down = false;
+                            }
+                            mouse::Button::Right => {
+                                self.rmouse_down = false;
+                            }
+                            _ => {info!("Unhandled mouse release")}
+                        }
+                    }
+                    mouse::Event::CursorMoved { position } => {
+                        if self.lmouse_down {
+                            self.push_gesture_data(*position);
+                        }
+                        if self.rmouse_down {
+                            // todo move window by changing margins
+                        }
+                    }
+                    _ => {info!("Unhandled event")}
+                    
+                }
+            }
+            //Event::Keyboard(event) => todo!(),
+            //Event::Window(event) => todo!(),
+            Event::Touch(event) => {
+                match event {
+                    touch::Event::FingerPressed { id, position} => {
+                        self.finger_presses.push((id.0, *position, Instant::now()));
+                    }
+                    touch::Event::FingerMoved { id, position} => {
+                        if let Some((_, _, _)) = self.finger_presses.iter_mut().find(|(fid, _, _)| *fid == id.0) {
+                            if id.0 == 1 {
+                                info!("Finger 1 moved to: {position}");
+                            }
+                        }
+                    }
+                    touch::Event::FingerLifted { id, position} | touch::Event::FingerLost { id, position} => {
+                        self.finger_presses.retain(|(fid, _, _)| *fid != id.0);
+                        //todo
+                    }
+                    _ => {}
+                }
+
+                // Check for multiple finger presses
+                if self.finger_presses.len() >= 2 {
+                    // Get the timestamps of the two most recent finger presses
+                    let (t1, t2) = {
+                        let mut timestamps = self.finger_presses.iter().map(|(_, _, t)| t).collect::<Vec<_>>();
+                        timestamps.sort();
+                        (timestamps[0], timestamps[1])
+                    };
+
+                    // Check if the delay between the two finger presses is within a certain threshold
+                    if t2.duration_since(*t1).as_millis() < 200 { // 200ms threshold
+                        // Handle the multiple finger press event
+                        info!("Multiple finger press detected!");
+                    }
+                }
+            },
+            _ => {}, // info!("event: {event:?}");
+        }
+        
+    }
 }
+
 
 impl Default for MainWindow {
     /// Creates a default instance of [`MainWindow`].
@@ -114,6 +197,7 @@ impl Default for MainWindow {
             dark_mode: true,
             lmouse_down: false,
             rmouse_down: false,
+            finger_presses: Vec::new(),
             current_view: View::Main,
             views,
             gesture_data: VecDeque::new(),
@@ -165,46 +249,7 @@ impl Application for MainWindow {
                 info!("{s}");
             }
             MainMessage::IcedEvent(event) => {
-                match event {
-                    Event::Mouse(event) => {
-                        match event {
-                            mouse::Event::ButtonPressed(button) => {
-                                match button {
-                                    mouse::Button::Left => {
-                                        self.gesture_data.clear();
-                                        self.lmouse_down = true;
-                                    }
-                                    mouse::Button::Right => {
-                                        self.rmouse_down = true;
-                                    }
-                                    _ => {info!("Unhandled mouse button")}
-                                }
-                            }
-                            mouse::Event::ButtonReleased(button) => {
-                                match button {
-                                    mouse::Button::Left => {
-                                        self.lmouse_down = false;
-                                    }
-                                    mouse::Button::Right => {
-                                        self.rmouse_down = false;
-                                    }
-                                    _ => {info!("Unhandled mouse release")}
-                                }
-                            }
-                            mouse::Event::CursorMoved { position } => {
-                                if self.lmouse_down {
-                                    self.push_gesture_data(position);
-                                }
-                            }
-                            _ => {info!("Unhandled event")}
-                            
-                        }
-                    }
-                    //Event::Keyboard(event) => todo!(),
-                    //Event::Window(event) => todo!(),
-                    //Event::Touch(event) => todo!(),
-                    _ => {}, // info!("event: {event:?}");
-                }
+                self.handle_input_event(&event);
             }
             MainMessage::ChangeScreenEdge(screen_edge) => {
                 self.screen_edge = screen_edge;
@@ -258,7 +303,7 @@ impl Application for MainWindow {
         String::from("surfboard")
     }
 
-    fn subscription(&self) -> iced::Subscription<Self::Message> {
+    fn subscription(&self) -> Subscription<Self::Message> {
         event::listen().map(MainMessage::IcedEvent)
     }
 }
