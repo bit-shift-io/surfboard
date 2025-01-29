@@ -1,4 +1,5 @@
 use core::time;
+use std::collections::VecDeque;
 
 use iced::{
     mouse, time::Instant, widget::{canvas::{
@@ -6,41 +7,41 @@ use iced::{
         Geometry, 
         Path, 
         Program, 
-        Stroke}, text::Fragment}, Color, Point, Rectangle, Renderer, Theme
+        Stroke}, text::Fragment}, Color, Gradient, Point, Rectangle, Renderer, Theme
 };
-use iced_graphics::{geometry::frame::{self, Backend}, text::cosmic_text::ttf_parser::feat::FeatureName};
+use iced_graphics::{geometry::{frame::{self, Backend}, LineCap, LineJoin}, text::cosmic_text::ttf_parser::feat::FeatureName};
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GestureData {
-    pub position: Point,
-    pub time: Instant,
+    pub point: Point,
+    pub instant: Instant,
 }
 
 pub struct Gesture<'a> {
-    gesture_data: &'a Vec<GestureData>,
+    gesture_data: &'a VecDeque<GestureData>,
 }
 
 impl<'a> Gesture<'a> {
-    pub fn new(points: &'a Vec<GestureData>) -> Self {
+    pub fn new(gesture_data: &'a VecDeque<GestureData>) -> Self {
         Gesture {
-            gesture_data: points,
+            gesture_data,
         }
     }
 
 
     fn draw_single_line_method(&self, mut frame: Frame) -> Frame {
         let path = Path::new(|builder| {
-            builder.move_to(self.gesture_data.last().unwrap().position);
-            let mut prev_point = self.gesture_data.last().unwrap().position;
+            builder.move_to(self.gesture_data.back().unwrap().point);
+            let mut prev_point = self.gesture_data.back().unwrap().point;
             // quadratic_curve_to
-            for data in self.gesture_data.iter().rev().skip(4).step_by(4) {
+            for data in self.gesture_data.iter().rev().skip(1) {
                 let control_point = Point::new(
-                    (prev_point.x + data.position.x) / 2.0,
-                    (prev_point.y + data.position.y) / 2.0,
+                    (prev_point.x + data.point.x) / 2.0,
+                    (prev_point.y + data.point.y) / 2.0,
                 );
-                builder.quadratic_curve_to(control_point, data.position);
-                prev_point = data.position;
+                builder.quadratic_curve_to(control_point, data.point);
+                prev_point = data.point;
             }
         });
 
@@ -58,15 +59,16 @@ impl<'a> Gesture<'a> {
     /// Create the path using a Builder closure
     /// create the line in reverse order
     fn draw_line_segment_method(&self, mut frame: Frame) -> Frame {
+        let gesture_data = self.gesture_data.clone();
         let max_width = 16u128; // Max initial width
         let max_opacity = 0.3; // Max initial opacity
         let fade_duration = 1000u128; // ms duration for fading
         let now = Instant::now();
-        let mut prev_point = self.gesture_data.last().unwrap().position;
+        let mut prev_point = gesture_data.back().unwrap().point;
 
-        for (i, data) in self.gesture_data.iter().enumerate().rev().skip(1).step_by(1) {
+        for (i, data) in gesture_data.iter().enumerate().rev().skip(1) {
             // draw curve
-            let next_point = data.position;
+            let next_point = data.point;
 
             let path = Path::new(|builder| {
                 builder.move_to(prev_point);
@@ -76,10 +78,7 @@ impl<'a> Gesture<'a> {
             prev_point = next_point;
 
             // apply styling to curve
-            let time_elapsed = now.duration_since(data.time).as_millis();
-            
-            //info!("Time {}: {}", i, time_elapsed);
-
+            let time_elapsed = now.duration_since(data.instant).as_millis();
             if time_elapsed > fade_duration {
                 return frame;
             }
@@ -118,11 +117,11 @@ impl<'a> Gesture<'a> {
         let max_opacity = 0.3; // Max initial opacity
         let fade_duration = 1000u128; // ms duration for fading
         let now = Instant::now();
-        let mut prev_point = self.gesture_data.last().unwrap().position;
+        let mut prev_point = self.gesture_data.back().unwrap().point;
 
-        for (i, data) in self.gesture_data.iter().enumerate().rev().skip(4).step_by(4) {
+        for (i, data) in self.gesture_data.iter().enumerate().rev().skip(1) {
             // draw curve
-            let next_point = data.position;
+            let next_point = data.point;
 
             // Generate control points using Catmull-Rom (for smoother curves)
             let control_point1 = Point::new(
@@ -143,26 +142,19 @@ impl<'a> Gesture<'a> {
             prev_point = next_point;
 
             // apply styling to curve
-            let time_elapsed = now.duration_since(data.time).as_millis();
-            
-            //info!("Time {}: {}", i, time_elapsed);
+            // let time_elapsed = now.duration_since(data.instant).as_millis();
+            // if time_elapsed > fade_duration {
+            //     return frame;
+            // }
 
-            if time_elapsed > fade_duration {
-                return frame;
-            }
-
-            //let progress = 1.0 - (time_elapsed / fade_duration);
             // Calculate fade progress using integer math for time_elapsed and fade_duration
-            let progress = (fade_duration - time_elapsed) as f32 / fade_duration as f32;
-
-            //let width = max_width * progress; // width narrows
-            //let opacity = max_opacity * progress; // fade out
             // Calculate width and opacity based on progress
-            let width = (max_width as f32 * progress).max(1.0); // Ensure width doesn't go below 1.0
-            let opacity = (max_opacity * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
+            // let progress = (fade_duration - time_elapsed) as f32 / fade_duration as f32;
+            // let width = (max_width as f32 * progress).max(1.0); // Ensure width doesn't go below 1.0
+            // let opacity = (max_opacity * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
 
             // debug
-            let opacity = 1.0;
+            let opacity = 0.5;
             let width = 16.0;
 
             frame.stroke(
@@ -170,6 +162,8 @@ impl<'a> Gesture<'a> {
                 Stroke {
                     style: Color::from_rgba(0.3, 0.1, 0.8, opacity).into(),
                     width,
+                    line_cap: LineCap::Square,
+                    line_join: LineJoin::Miter,
                     ..Default::default()
                 },
             );
@@ -192,7 +186,7 @@ impl<'a, Message> Program<Message> for Gesture<'a> {
         //info!("{}", self.gesture_data.len());
         let frame = Frame::new(renderer, bounds.size());
         if self.gesture_data.len() > 4 {
-            return vec![self.draw_line_segment_method(frame).into_geometry()]
+            return vec![self.draw_segment_method(frame).into_geometry()]
         }
         vec![frame.into_geometry()]
     }

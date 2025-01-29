@@ -15,5 +15,6 @@ pub fn init_logger() {
 pub fn init_env_var() {
     use std::env;
     env::set_var("RUST_LOG", "info");
+    env::set_var("ICED_BACKEND", "tiny-skia");
     //env::set_var("WGPU_BACKEND", "VULKAN");
 }

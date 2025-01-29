@@ -1,17 +1,10 @@
+use std::collections::VecDeque;
+
 use iced::{
-    time::Instant, 
-    event, 
-    Color, 
-    Element, 
-    Event, 
-    Task, 
-    Theme,
-    mouse,
-    widget::{
+    event, mouse, time::Instant, widget::{
         stack, 
         Canvas,
-    },
-    Length,
+    }, Color, Element, Event, Length, Point, Task, Theme
 };
 use iced_layershell::{
     reexport::Anchor, 
@@ -34,7 +27,7 @@ pub struct MainWindow {
     rmouse_down: bool,
     current_view: View, // enum
     views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
-    gesture_data: Vec<GestureData>,
+    gesture_data: VecDeque<GestureData>,
 }
 
 
@@ -65,6 +58,42 @@ impl MainWindow {
     fn current_view(&self) -> &Box<dyn ViewTrait> {
         self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
+
+    fn push_gesture_data(&mut self, position: Point) {
+        // debug print out the points
+        info!("\nGesture Data:");
+        self.gesture_data.iter().for_each(|item| info!("{:?}", item));
+
+        if self.gesture_data.len() > 1 {
+            // distance check with the back item
+            let prev = self.gesture_data.back().unwrap();
+            let distance = Point::distance(&prev.point, position);
+            if distance < 30.0 {
+                return;
+            }
+            
+            // time check
+            // remove the front items
+            while let Some(item) = self.gesture_data.front() {
+                let elapsed = Instant::now().duration_since(item.instant);
+                if elapsed.as_millis() > 1000 { // 2 seconds
+                    self.gesture_data.pop_front();
+                } else {
+                    break;
+                }
+            }
+
+        }
+
+        // round off the position
+        let point = Point::new(position.x.round(), position.y.round());
+
+        // add data to the back
+        self.gesture_data.push_back(GestureData {
+            point,
+            instant: Instant::now(),
+        });
+    }
 }
 
 impl Default for MainWindow {
@@ -87,7 +116,7 @@ impl Default for MainWindow {
             rmouse_down: false,
             current_view: View::Main,
             views,
-            gesture_data: Vec::new(),
+            gesture_data: VecDeque::new(),
         }
     }
 }
@@ -164,8 +193,7 @@ impl Application for MainWindow {
                             }
                             mouse::Event::CursorMoved { position } => {
                                 if self.lmouse_down {
-                                    let data = GestureData{position, time: Instant::now()};
-                                    self.gesture_data.push(data);
+                                    self.push_gesture_data(position);
                                 }
                             }
                             _ => {info!("Unhandled event")}
