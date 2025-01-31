@@ -1,14 +1,12 @@
 use std::collections::VecDeque;
 use iced::{
-    event, mouse, time::Instant, widget::{
+    event, futures::future::ok, mouse, time::Instant, touch, widget::{
         stack, 
         Canvas,
-    }, Color, Element, Event, Length, Point, Task, Theme, touch, Subscription
+    }, Color, Element, Event, Length, Point, Subscription, Task, Theme
 };
 use iced_layershell::{
-    reexport::Anchor, 
-    to_layer_message, 
-    Application
+    actions::LayershellCustomActions, application, reexport::{Anchor, KeyboardInteractivity, Layer}, to_layer_message, Application
 };
 use crate::{
     components::*, 
@@ -20,10 +18,12 @@ use crate::{
 pub struct MainWindow {
     windowed: bool,
     screen_edge: ScreenEdge,
+    margin: (i32, i32, i32, i32), // top, right, bottom, left
     theme: iced::Theme,
     dark_mode: bool,
     lmouse_down: bool,
     rmouse_down: bool,
+    rmouse_start: Option<Point>,
     finger_presses: Vec<(u64, Point, Instant)>,
     current_view: View, // enum
     views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
@@ -95,7 +95,39 @@ impl MainWindow {
         });
     }
 
-    fn handle_input_event(&mut self, event: &Event) {
+
+    fn move_window(&mut self, position: Point) -> Task<<main_window::MainWindow as iced_layershell::Application>::Message> {
+        // get windows initial position - the margin
+        if self.rmouse_start.is_none() {
+            self.rmouse_start = Some(position);
+            info!("start: {:?}", self.rmouse_start.unwrap());
+            return Task::none();
+        }
+
+        // calulate the difference
+        let diff = self.rmouse_start.unwrap() - position;
+        info!("diff: {:?} {:?}", -diff.x as i32, diff.y as i32);
+
+        // calculate for the margin change
+        let y = diff.y as i32 + self.margin.2;
+        let x = -diff.x as i32 + self.margin.3;
+
+        //info!("mar: {:?} {:?}", x as i32, y as i32);
+
+        // store the mouse pos
+        self.rmouse_start = Some(position);
+        
+        // apply margin to move window
+        self.margin.2 = y;
+        self.margin.3 = x;
+        info!("mar: {:?} {:?}", x as i32, y as i32);
+        return Task::done(MainMessage::MarginChange((0, 0, y, x)))
+
+        //Task::none()
+    }
+
+
+    fn handle_input_event(&mut self, event: &Event) -> Task<<app::main_window::MainWindow as iced_layershell::Application>::Message> {
 
         match event {
             Event::Mouse(event) => {
@@ -107,6 +139,7 @@ impl MainWindow {
                                 self.lmouse_down = true;
                             }
                             mouse::Button::Right => {
+                                self.rmouse_start = None;
                                 self.rmouse_down = true;
                             }
                             _ => {info!("Unhandled mouse button")}
@@ -128,7 +161,9 @@ impl MainWindow {
                             self.push_gesture_data(*position);
                         }
                         if self.rmouse_down {
-                            // todo move window by changing margins
+                            if self.rmouse_down {
+                                return self.move_window(*position);
+                            }
                         }
                     }
                     _ => {info!("Unhandled event")}
@@ -174,7 +209,23 @@ impl MainWindow {
             },
             _ => {}, // info!("event: {event:?}");
         }
-        
+        Task::none()
+    }
+
+    // handle layer shell settings
+    pub fn layer_shell_settings(start_mode: StartMode) -> LayerShellSettings {
+        let default = MainWindow::default();
+        // default free window mode
+        LayerShellSettings {
+            anchor: Anchor::Bottom | Anchor::Left, //| Anchor::Right,
+            layer: Layer::Top, // Layer::Overlay if need to go the max
+            exclusive_zone: -1,
+            size: Some((600, 250)), //None,
+            margin: default.margin,
+            keyboard_interactivity: KeyboardInteractivity::OnDemand,
+            events_transparent: false,
+            start_mode: StartMode::default(),
+        }
     }
 }
 
@@ -193,10 +244,12 @@ impl Default for MainWindow {
         Self {
             windowed: true,
             screen_edge: ScreenEdge::Top,
+            margin: (0, 0, 0, 0),
             theme: iced::Theme::Light,
             dark_mode: true,
             lmouse_down: false,
             rmouse_down: false,
+            rmouse_start: None,
             finger_presses: Vec::new(),
             current_view: View::Main,
             views,
@@ -214,11 +267,10 @@ impl Application for MainWindow {
 
     /// Create a new instance of [`MainWindow`].
     fn new(_flags: ()) -> (Self, Task<Self::Message>) {
-        let mut default_window = Self::default();
-        default_window.windowed = false;
+        let default_window = Self::default();
+        //default_window.windowed = true;
         (default_window, Task::none())
     }
-    
 
     fn view(&self) -> Element<Self::Message> {
         let has_gesture = self.current_view().has_gesture();
@@ -249,7 +301,8 @@ impl Application for MainWindow {
                 info!("{s}");
             }
             MainMessage::IcedEvent(event) => {
-                self.handle_input_event(&event);
+                //info!("iced: {event:?}");
+                return self.handle_input_event(&event);
             }
             MainMessage::ChangeScreenEdge(screen_edge) => {
                 self.screen_edge = screen_edge;
@@ -305,5 +358,16 @@ impl Application for MainWindow {
 
     fn subscription(&self) -> Subscription<Self::Message> {
         event::listen().map(MainMessage::IcedEvent)
+            //.map(MainMessage::MarginChange(()))
     }
+    
+    fn theme(&self) -> Self::Theme {
+        Self::Theme::default()
+    }
+    
+    fn scale_factor(&self) -> f64 {
+        1.0
+    }
+
+
 }

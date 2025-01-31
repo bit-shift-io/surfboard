@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate log;
 
-use iced_layershell::reexport::Anchor;
 use iced_layershell::settings::{LayerShellSettings, Settings, StartMode};
 use iced_layershell::Application;
 
@@ -20,30 +19,10 @@ pub fn main() -> Result<(), iced_layershell::Error> {
 
     let start_mode = handle_args();
 
-    // window kind of mode?
     MainWindow::run(Settings {
-        layer_settings: LayerShellSettings {
-            size: Some((600, 250)),
-            //exclusive_zone: 250,
-            anchor: Anchor::Bottom | Anchor::Right,
-            start_mode,
-            margin: (10, 10, 10, 10),
-            ..Default::default()
-        },
+        layer_settings: MainWindow::layer_shell_settings(start_mode),
         ..Default::default()
     })
-
-    // docked mode
-    // MainWindow::run(Settings {
-    //     layer_settings: LayerShellSettings {
-    //         size: Some((100, 200)),
-    //         exclusive_zone: 200,
-    //         anchor: Anchor::Bottom | Anchor::Left | Anchor::Right,
-    //         start_mode,
-    //         ..Default::default()
-    //     },
-    //     ..Default::default()
-    // })
 }
 
 
