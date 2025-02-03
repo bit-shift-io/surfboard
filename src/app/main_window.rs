@@ -37,6 +37,7 @@ pub enum MainMessage {
     Debug(String),
     StringMessage(String),
     IcedEvent(Event),
+    Launch(usize),
     ChangeScreenEdge(ScreenEdge),
     ChangeView(View),
     KeyEnter,
@@ -50,6 +51,7 @@ pub enum MainMessage {
 pub enum View {
     Main,
     Settings,
+    ApplicationLauncher,
     // Add more views/layouts here
 }
 
@@ -127,7 +129,7 @@ impl MainWindow {
     }
 
 
-    fn handle_input_event(&mut self, event: &Event) -> Task<<app::main_window::MainWindow as iced_layershell::Application>::Message> {
+    fn handle_input_event(&mut self, event: &Event) -> Task<<MainWindow as iced_layershell::Application>::Message> {
 
         match event {
             Event::Mouse(event) => {
@@ -238,6 +240,7 @@ impl Default for MainWindow {
         let views: Vec<Box<dyn ViewTrait>> = vec![
             Box::new(MainView::new()),
             Box::new(SettingsView::new()),
+            Box::new(ApplicationLauncherView::new()),
         ];
 
         // Return a default instance of MainWindow

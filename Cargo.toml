@@ -12,12 +12,15 @@ iced_layershell = "0.13.2"
 iced_graphics = "0.13.0"
 iced_renderer = "0.13.0"
 iced_runtime = "0.13.2"
+applications = "0.2.3"
 
 
 [features]
 default = [
     "iced/canvas",
     "iced/advanced",
+	"iced/image",
+	"iced/svg",
     ]
 
 
