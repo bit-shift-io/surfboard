@@ -1,15 +1,11 @@
 use std::collections::HashSet;
 use std::str::FromStr;
-use std::{
-    path::PathBuf,
-    sync::{atomic::AtomicBool, Arc, Mutex},
-};
-use ini::ini;
+use std::path::PathBuf;
+use pretty_ini::{ini, ini_file};
 use walkdir::WalkDir;
 use iced::widget::{button, column, image, row, svg, text};
 use iced::Pixels;
 use iced::{Element, Length};
-use applications::{AppInfoContext, AppInfo};
 
 use crate::*;
 
@@ -28,13 +24,14 @@ pub struct App {
 impl App {
     pub fn new(app_path: &str) -> Self {
         let app_path = PathBuf::from(app_path);
-        let app_desktop_path = app_path.clone();
         let app = parse_desktop_file(app_path);
         app
     }
 
     pub fn launch(&self) {
-
+        if let Some(executable) = self.executable.as_ref() {
+            std::process::Command::new(executable);
+        }
     }
 
     pub fn title(&self) -> &str {
@@ -99,21 +96,20 @@ impl App {
 
 static ICONS_SIZE: &[&str] = &["256x256", "128x128"];
 
-static THEMES_LIST: &[&str] = &["breeze", "Adwaita"];
+static THEMES_LIST: &[&str] = &["breeze", "Adwaita", "Qogir"];
 
 fn get_icon_path_from_xdgicon(iconname: &str) -> Option<PathBuf> {
-    let scalable_icon_path =
-        xdg::BaseDirectories::with_prefix("icons/hicolor/scalable/apps").unwrap();
+    let scalable_icon_path = xdg::BaseDirectories::with_prefix("icons/hicolor/scalable/apps").unwrap();
     if let Some(iconpath) = scalable_icon_path.find_data_file(format!("{iconname}.svg")) {
         return Some(iconpath);
     }
     for prefix in ICONS_SIZE {
-        let iconpath =
-            xdg::BaseDirectories::with_prefix(format!("icons/hicolor/{prefix}/apps")).unwrap();
+        let iconpath = xdg::BaseDirectories::with_prefix(format!("icons/hicolor/{prefix}/apps")).unwrap();
         if let Some(iconpath) = iconpath.find_data_file(format!("{iconname}.png")) {
             return Some(iconpath);
         }
     }
+
     let pixmappath = xdg::BaseDirectories::with_prefix("pixmaps").unwrap();
     if let Some(iconpath) = pixmappath.find_data_file(format!("{iconname}.svg")) {
         return Some(iconpath);
@@ -121,18 +117,22 @@ fn get_icon_path_from_xdgicon(iconname: &str) -> Option<PathBuf> {
     if let Some(iconpath) = pixmappath.find_data_file(format!("{iconname}.png")) {
         return Some(iconpath);
     }
+
     for themes in THEMES_LIST {
-        let iconpath =
-            xdg::BaseDirectories::with_prefix(format!("icons/{themes}/apps/48")).unwrap();
+        let iconpath = xdg::BaseDirectories::with_prefix(format!("icons/{themes}/apps/48")).unwrap();
         if let Some(iconpath) = iconpath.find_data_file(format!("{iconname}.svg")) {
             return Some(iconpath);
         }
-        let iconpath =
-            xdg::BaseDirectories::with_prefix(format!("icons/{themes}/apps/64")).unwrap();
+        let iconpath = xdg::BaseDirectories::with_prefix(format!("icons/{themes}/apps/64")).unwrap();
+        if let Some(iconpath) = iconpath.find_data_file(format!("{iconname}.svg")) {
+            return Some(iconpath);
+        }
+        let iconpath = xdg::BaseDirectories::with_prefix(format!("icons/{themes}/scalable/apps")).unwrap();
         if let Some(iconpath) = iconpath.find_data_file(format!("{iconname}.svg")) {
             return Some(iconpath);
         }
     }
+
     None
 }
 
@@ -148,30 +148,53 @@ fn get_icon_path(iconname: &str) -> Option<PathBuf> {
 // todo: replace with https://crates.io/crates/pretty_ini ?
 // konsole doesnt work with ini crate
 
+pub fn load_ini(file_path: &str) -> ini::Ini {
+    let mut file = ini_file::IniFile::default();
+    file.set_path(file_path);
+
+    let mut ini = ini::Ini::default();
+    ini.load(&mut file).unwrap();
+    ini
+}
+
+
 pub fn parse_desktop_file(desktop_file_path: PathBuf) -> App {
     let mut app = App::default();
     app.desktop = desktop_file_path.clone();
-    let desktop_file_path_str = desktop_file_path.to_str().unwrap();
+    let ini = load_ini(app.desktop.to_str().unwrap());
+    if !ini.table_exists_from_str("Desktop Entry") {
+        return app;
+    }
 
-    let map = ini!(desktop_file_path_str);
-    let desktop_entry_exists = map.contains_key("desktop entry");
-    if desktop_entry_exists {
-        let desktop_entry = map["desktop entry"].clone();
-        if desktop_entry.contains_key("exec") {
-            let exec = desktop_entry["exec"].clone();
-            app.executable = Some(PathBuf::from(exec.unwrap()));
-        }
-        if desktop_entry.contains_key("icon") {
-            let icon = desktop_entry["icon"].clone();
-            //app.icon = Some(PathBuf::from(icon.unwrap()));
-            app.icon = get_icon_path(&icon.unwrap())
-        }
-        if desktop_entry.contains_key("name") {
-            let name = desktop_entry["name"].clone();
-            app.name = name.unwrap();
+    if ini.key_exists_from_str("Desktop Entry", "Name") {
+        match ini.get("Desktop Entry", "Name") {
+            Ok(item) => {
+                app.name = item.value;
+            }
+            Err(_) => {}
         }
     }
-    return app;
+
+    if ini.key_exists_from_str("Desktop Entry", "Icon") {
+        match ini.get("Desktop Entry", "Icon") {
+            Ok(item) => {
+                //app.icon = Some(PathBuf::from(item.value));
+                app.icon = get_icon_path(&item.value);
+            }
+            Err(_) => {}
+        }
+    }
+
+    if ini.key_exists_from_str("Desktop Entry", "Exec") {
+        match ini.get("Desktop Entry", "Exec") {
+            Ok(item) => {
+                app.executable = Some(PathBuf::from(item.value));
+            }
+            Err(_) => {}
+        }
+    }
+
+    return app
 }
 
 

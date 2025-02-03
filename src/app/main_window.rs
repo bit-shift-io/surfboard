@@ -50,7 +50,7 @@ pub enum MainMessage {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum View {
     Main,
-    Settings,
+    Configuration,
     ApplicationLauncher,
     // Add more views/layouts here
 }
@@ -59,6 +59,10 @@ pub enum View {
 impl MainWindow {
     fn current_view(&self) -> &Box<dyn ViewTrait> {
         self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
+    }
+
+    fn current_view_mut(&mut self) -> &mut Box<dyn ViewTrait> {
+        self.views.iter_mut().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
 
     fn push_gesture_data(&mut self, position: Point) {
@@ -239,7 +243,7 @@ impl Default for MainWindow {
         // Add more views/layouts here
         let views: Vec<Box<dyn ViewTrait>> = vec![
             Box::new(MainView::new()),
-            Box::new(SettingsView::new()),
+            Box::new(ConfigurationView::new()),
             Box::new(ApplicationLauncherView::new()),
         ];
 
@@ -306,6 +310,9 @@ impl Application for MainWindow {
             MainMessage::IcedEvent(event) => {
                 //info!("iced: {event:?}");
                 return self.handle_input_event(&event);
+            }
+            MainMessage::Launch(_) => {
+                return self.current_view_mut().update(message);
             }
             MainMessage::ChangeScreenEdge(screen_edge) => {
                 self.screen_edge = screen_edge;

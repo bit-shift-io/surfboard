@@ -2,8 +2,9 @@ use iced::{
     widget::{
         column, 
         row,
-    }, Element, Length
+    }, Element, Length, Task
 };
+use iced_runtime::Action;
 use crate::app::*;
 use crate::components::*;
 
@@ -54,6 +55,22 @@ impl ViewTrait for ApplicationLauncherView {
     
     fn has_gesture(&self) -> bool {
         true
+    }
+    
+    fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
+        match message {
+            MainMessage::Launch(index) => {
+                // optionally we should have each app with an on_pressed? custom widget is needed then?
+                info!("click task!");
+                self.applications[index].launch();
+                iced_runtime::task::effect(Action::Exit)
+                //return Task::none()
+                //return Task::done(MainMessage::Launch(index))
+            }
+            _ => {
+                return Task::none()
+            }
+        }
     }
 }
 

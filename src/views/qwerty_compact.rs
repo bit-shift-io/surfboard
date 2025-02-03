@@ -1,9 +1,8 @@
 use iced::{
-    Length,
     widget::{
         column, 
         row,
-    }
+    }, Length, Task
 };
 use crate::app::*;
 use crate::components::*;
@@ -55,11 +54,11 @@ impl ViewTrait for MainView {
                 Key::from_str("b").on_press(MainMessage::Debug(String::from("t"))),
                 Key::from_str("n").on_press(MainMessage::Debug(String::from("y"))),
                 Key::from_str("m").on_press(MainMessage::Debug(String::from("u"))),
-                Key::from_str("Enter").on_press(MainMessage::ChangeView(View::Settings)),
+                Key::from_str("Enter").on_press(MainMessage::ChangeView(View::Configuration)),
             ].padding(0).width(Length::Fill).height(Length::Fill),
 
             row![
-                Key::from_str("@").on_press(MainMessage::ChangeView(View::Settings)),
+                Key::from_str("@").on_press(MainMessage::ChangeView(View::Configuration)),
                 Key::from_str(":)").on_press(MainMessage::Debug(String::from("q"))),
                 Key::from_str("     ").on_press(MainMessage::Debug(String::from("w"))),
                 Key::from_str(".").on_press(MainMessage::Debug(String::from("e"))),
@@ -67,7 +66,7 @@ impl ViewTrait for MainView {
                 Key::from_str(">").on_press(MainMessage::Debug(String::from("t"))),
                 Key::from_str("^").on_press(MainMessage::Debug(String::from("y"))),
                 Key::from_str("<").on_press(MainMessage::Debug(String::from("u"))),
-                Key::from_str("^").on_press(MainMessage::ChangeView(View::Settings)),
+                Key::from_str("^").on_press(MainMessage::ChangeView(View::Configuration)),
             ].padding(0).width(Length::Fill).height(Length::Fill),
 
         ].padding(0).width(Length::Fill).height(Length::Fill)
@@ -84,6 +83,10 @@ impl ViewTrait for MainView {
     
     fn has_gesture(&self) -> bool {
         true
+    }
+    
+    fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
+        Task::none()
     }
 }
 

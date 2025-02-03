@@ -5,24 +5,21 @@ use iced::{
         row, 
         Button, 
         PickList, 
-        Text}, 
-        Length, 
-        Renderer, 
-        Theme
+        Text}, Element, Length, Renderer, Task, Theme
     };
 use crate::app::*;
 
 
 #[derive(Debug, Clone)]
-pub struct SettingsView;
+pub struct ConfigurationView;
 
 
-impl ViewTrait for SettingsView {
+impl ViewTrait for ConfigurationView {
     fn new() -> Self where Self: Sized {
-        SettingsView{}
+        ConfigurationView{}
     }
 
-    fn view(&self) -> iced::Element<MainMessage> {
+    fn view(&self) -> Element<MainMessage> {
 
         let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::Main));
         
@@ -54,14 +51,18 @@ impl ViewTrait for SettingsView {
     }
 
     fn name(&self) -> String {
-        String::from("settings")
+        String::from("configuration")
     }
     
     fn class(&self) -> View {
-        View::Settings
+        View::Configuration
     }
     
     fn has_gesture(&self) -> bool {
         false
+    }
+    
+    fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
+        Task::none()
     }
 }
