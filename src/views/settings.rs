@@ -26,6 +26,11 @@ impl ViewTrait for SettingsView {
 
         let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::Main));
         
+        let view_launcher = Button::new(Text::new("launcher")).on_press(MainMessage::ChangeView(View::ApplicationLauncher));
+        
+
+
+
         let pick_screen_edge: PickList<'_, ScreenEdge, &[ScreenEdge], ScreenEdge, MainMessage, Theme, Renderer> = pick_list(
             &ScreenEdge::ALL[..],
             None,
@@ -40,6 +45,7 @@ impl ViewTrait for SettingsView {
             button("e").on_press(MainMessage::Debug("e".into())),
             pick_screen_edge,
             view_main,
+            view_launcher,
             //menu,
         ]
         .padding(20)

@@ -1,6 +1,11 @@
-use std::path::PathBuf;
+use std::collections::HashSet;
 use std::str::FromStr;
-
+use std::{
+    path::PathBuf,
+    sync::{atomic::AtomicBool, Arc, Mutex},
+};
+use ini::ini;
+use walkdir::WalkDir;
 use iced::widget::{button, column, image, row, svg, text};
 use iced::Pixels;
 use iced::{Element, Length};
@@ -11,13 +16,23 @@ use crate::*;
 static DEFAULT_ICON: &[u8] = include_bytes!("../../res/ghost-solid.svg");
 
 #[allow(unused)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct App {
     name: String,
     icon: Option<PathBuf>,
+    executable: Option<PathBuf>, // Path to the .app file for mac, or Exec for Linux, or .exe for Windows
+    desktop: PathBuf,     // Path to the .desktop file for Linux, .app for Mac
 }
 
+
 impl App {
+    pub fn new(app_path: &str) -> Self {
+        let app_path = PathBuf::from(app_path);
+        let app_desktop_path = app_path.clone();
+        let app = parse_desktop_file(app_path);
+        app
+    }
+
     pub fn launch(&self) {
 
     }
@@ -87,6 +102,37 @@ static ICONS_SIZE: &[&str] = &["256x256", "128x128"];
 static THEMES_LIST: &[&str] = &["breeze", "Adwaita"];
 
 fn get_icon_path_from_xdgicon(iconname: &str) -> Option<PathBuf> {
+    let scalable_icon_path =
+        xdg::BaseDirectories::with_prefix("icons/hicolor/scalable/apps").unwrap();
+    if let Some(iconpath) = scalable_icon_path.find_data_file(format!("{iconname}.svg")) {
+        return Some(iconpath);
+    }
+    for prefix in ICONS_SIZE {
+        let iconpath =
+            xdg::BaseDirectories::with_prefix(format!("icons/hicolor/{prefix}/apps")).unwrap();
+        if let Some(iconpath) = iconpath.find_data_file(format!("{iconname}.png")) {
+            return Some(iconpath);
+        }
+    }
+    let pixmappath = xdg::BaseDirectories::with_prefix("pixmaps").unwrap();
+    if let Some(iconpath) = pixmappath.find_data_file(format!("{iconname}.svg")) {
+        return Some(iconpath);
+    }
+    if let Some(iconpath) = pixmappath.find_data_file(format!("{iconname}.png")) {
+        return Some(iconpath);
+    }
+    for themes in THEMES_LIST {
+        let iconpath =
+            xdg::BaseDirectories::with_prefix(format!("icons/{themes}/apps/48")).unwrap();
+        if let Some(iconpath) = iconpath.find_data_file(format!("{iconname}.svg")) {
+            return Some(iconpath);
+        }
+        let iconpath =
+            xdg::BaseDirectories::with_prefix(format!("icons/{themes}/apps/64")).unwrap();
+        if let Some(iconpath) = iconpath.find_data_file(format!("{iconname}.svg")) {
+            return Some(iconpath);
+        }
+    }
     None
 }
 
@@ -98,56 +144,89 @@ fn get_icon_path(iconname: &str) -> Option<PathBuf> {
     }
 }
 
-pub fn all_apps() -> Vec<App> {
-    let mut ctx = AppInfoContext::new();
-    ctx.refresh_apps().unwrap(); // must refresh apps before getting them
 
-    let apps = ctx.get_all_apps();
-    info!("Apps: {:#?}", apps);
+// todo: replace with https://crates.io/crates/pretty_ini ?
+// konsole doesnt work with ini crate
 
-    let frontmost_app = ctx.get_frontmost_application().unwrap();
-    info!("Frontmost App: {:#?}", frontmost_app);
+pub fn parse_desktop_file(desktop_file_path: PathBuf) -> App {
+    let mut app = App::default();
+    app.desktop = desktop_file_path.clone();
+    let desktop_file_path_str = desktop_file_path.to_str().unwrap();
 
-    let running_apps = ctx.get_running_apps();
-    info!("Running Apps: {:#?}", running_apps);
+    let map = ini!(desktop_file_path_str);
+    let desktop_entry_exists = map.contains_key("desktop entry");
+    if desktop_entry_exists {
+        let desktop_entry = map["desktop entry"].clone();
+        if desktop_entry.contains_key("exec") {
+            let exec = desktop_entry["exec"].clone();
+            app.executable = Some(PathBuf::from(exec.unwrap()));
+        }
+        if desktop_entry.contains_key("icon") {
+            let icon = desktop_entry["icon"].clone();
+            //app.icon = Some(PathBuf::from(icon.unwrap()));
+            app.icon = get_icon_path(&icon.unwrap())
+        }
+        if desktop_entry.contains_key("name") {
+            let name = desktop_entry["name"].clone();
+            app.name = name.unwrap();
+        }
+    }
+    return app;
+}
 
-    Vec::new()
 
-    // let re = regex::Regex::new(r"([a-zA-Z]+);").unwrap();
-    // gio::AppInfo::all()
-    //     .iter()
-    //     .filter(|app| app.should_show() && app.downcast_ref::<gio::DesktopAppInfo>().is_some())
-    //     .map(|app| app.clone().downcast::<gio::DesktopAppInfo>().unwrap())
-    //     .map(|app| App {
-    //         appinfo: app.clone(),
-    //         name: app.name().to_string(),
-    //         descriptions: app.description(),
-    //         categrades: match app.categories() {
-    //             None => None,
-    //             Some(categrades) => {
-    //                 let tomatch = categrades.to_string();
-    //                 let tips = re
-    //                     .captures_iter(&tomatch)
-    //                     .map(|unit| unit.get(1).unwrap().as_str().to_string())
-    //                     .collect();
-    //                 Some(tips)
-    //             }
-    //         },
-    //         actions: {
-    //             let actions = app.list_actions();
-    //             if actions.is_empty() {
-    //                 None
-    //             } else {
-    //                 Some(actions)
-    //             }
-    //         },
-    //         icon: match &app.icon() {
-    //             None => None,
-    //             Some(icon) => {
-    //                 let iconname = gio::prelude::IconExt::to_string(icon).unwrap();
-    //                 get_icon_path(iconname.as_str())
-    //             }
-    //         },
-    //     })
-    //     .collect()
+pub fn get_all_apps() -> Vec<App> {
+    // read XDG_DATA_DIRS env var
+    let xdg_data_dirs = std::env::var("XDG_DATA_DIRS").unwrap_or("/usr/share".to_string());
+    let xdg_data_dirs: Vec<&str> = xdg_data_dirs.split(':').collect();
+    // make a string sett from xdg_data_dirs
+    let mut search_dirs: HashSet<&str> = xdg_data_dirs.iter().cloned().collect();
+    search_dirs.insert("/usr/share/applications");
+    // get home dir of current user
+    let home_dir = std::env::var("HOME").unwrap();
+    let home_path = PathBuf::from(home_dir);
+    let local_share_apps = home_path.join(".local/share/applications");
+    search_dirs.insert(local_share_apps.to_str().unwrap());
+    search_dirs.insert("/usr/share/xsessions");
+    search_dirs.insert("/etc/xdg/autostart");
+    search_dirs.insert("/var/lib/snapd/desktop/applications");
+    // for each dir, search for .desktop files
+    let mut apps: Vec<App> = Vec::new();
+    for dir in search_dirs {
+        let dir = PathBuf::from(dir);
+        if !dir.exists() {
+            continue;
+        }
+        for entry in WalkDir::new(dir.clone()) {
+            if entry.is_err() {
+                continue;
+            }
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.extension().is_none() {
+                continue;
+            }
+
+            if path.is_dir() {
+                continue;
+            }
+
+            if path.extension().unwrap() == "desktop" {
+                let app = parse_desktop_file(path.to_path_buf());
+                apps.push(app);
+            }
+        }
+    }
+    apps
+}
+
+
+pub fn open_file_with(file_path: PathBuf, app: App) {
+    let exe_path = app.executable.unwrap();
+    let exec_path_str = exe_path.to_str().unwrap();
+    let file_path_str = file_path.to_str().unwrap();
+    let output = std::process::Command::new(exec_path_str)
+        .arg(file_path_str)
+        .output()
+        .expect("failed to execute process");
 }
