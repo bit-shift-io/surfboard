@@ -35,9 +35,9 @@ pub struct MainWindow {
 #[derive(Debug, Clone)]
 pub enum MainMessage {
     Debug(String),
-    StringMessage(String),
+    String(String),
     IcedEvent(Event),
-    Launch(usize),
+    Index(usize),
     ChangeScreenEdge(ScreenEdge),
     ChangeView(View),
     KeyEnter,
@@ -304,15 +304,11 @@ impl Application for MainWindow {
             MainMessage::ChangeView(view) => {
                 self.current_view = view;
             }
-            MainMessage::StringMessage(s) => {
+            MainMessage::String(s) => {
                 info!("{s}");
             }
             MainMessage::IcedEvent(event) => {
-                //info!("iced: {event:?}");
                 return self.handle_input_event(&event);
-            }
-            MainMessage::Launch(_) => {
-                return self.current_view_mut().update(message);
             }
             MainMessage::ChangeScreenEdge(screen_edge) => {
                 self.screen_edge = screen_edge;
@@ -344,10 +340,7 @@ impl Application for MainWindow {
                 }
             }
             _ => {
-                // Handle layout-specific messages
-                //let view = self.current_view_mut();
-                //let boxed_message = view.convert_message(message);
-                //view.update(&boxed_message);
+                return self.current_view_mut().update(message);
             }
         }
         Task::none()

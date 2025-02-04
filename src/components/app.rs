@@ -1,11 +1,13 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 use std::path::PathBuf;
+use iced::widget::text::Wrapping;
 use pretty_ini::{ini, ini_file};
 use walkdir::WalkDir;
-use iced::widget::{button, column, image, row, svg, text};
-use iced::Pixels;
+use iced::widget::{button, column, image, row, svg, text, Text};
+use iced::{alignment, Pixels};
 use iced::{Element, Length};
+use crate::components::*;
 
 use crate::*;
 
@@ -69,27 +71,17 @@ impl App {
     }
 
     pub fn view(&self, index: usize, selected: bool) -> Element<MainMessage> {
-        button(
-            row![
+        Key::new(
+            column![
                 self.icon(),
-                column![
-                    text(self.title()).size(Pixels::from(20)),
-                    text(self.description()).size(Pixels::from(10))
-                ]
-                .spacing(4)
+                Text::new(self.title()).size(Pixels::from(20)).wrapping(Wrapping::WordOrGlyph).center()
             ]
-            .spacing(10),
+            .spacing(10)
+            .align_x(alignment::Horizontal::Center)
+            .width(Length::Fill)
+            //.spacing(10),
         )
-        .on_press(MainMessage::Launch(index))
-        .width(Length::Fill)
-        .height(Length::Fixed(85.))
-        .style(move |theme, status| {
-            if selected {
-                button::primary(theme, status)
-            } else {
-                button::secondary(theme, status)
-            }
-        })
+        .on_press(MainMessage::Index(index))
         .into()
     }
 }

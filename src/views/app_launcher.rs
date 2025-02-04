@@ -33,8 +33,8 @@ impl ViewTrait for ApplicationLauncherView {
 
     fn view(&self) -> Element<MainMessage> {
 
-        let bottom_vec: Vec<Element<MainMessage>> = self
-            .applications
+        let bottom_vec: Vec<Element<MainMessage>> = 
+            self.applications
             .iter()
             .enumerate()
             .map(|(filter_index, app)| app.view(filter_index, false))
@@ -59,7 +59,7 @@ impl ViewTrait for ApplicationLauncherView {
     
     fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
         match message {
-            MainMessage::Launch(index) => {
+            MainMessage::Index(index) => {
                 // optionally we should have each app with an on_pressed? custom widget is needed then?
                 info!("click task!");
                 self.applications[index].launch();
