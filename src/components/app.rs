@@ -32,7 +32,9 @@ impl App {
 
     pub fn launch(&self) {
         if let Some(executable) = self.executable.as_ref() {
-            std::process::Command::new(executable);
+            info!("Launching: {}", executable.display());
+            let _ = std::process::Command::new(executable)
+                        .spawn();
         }
     }
 
@@ -71,23 +73,27 @@ impl App {
     }
 
     pub fn view(&self, index: usize, selected: bool) -> Element<MainMessage> {
-        Key::new(
-            column![
-                self.icon(),
-                Text::new(self.title()).size(Pixels::from(20)).wrapping(Wrapping::WordOrGlyph).center()
-            ]
-            .spacing(10)
-            .align_x(alignment::Horizontal::Center)
-            .width(Length::Fill)
-            //.spacing(10),
-        )
-        .on_press(MainMessage::Index(index))
-        .into()
+        Key::new(self.icon())
+            .on_press(MainMessage::Index(index))
+            .into()
+
+        // Key::new(
+        //     column![
+        //         self.icon(),
+        //         Text::new(self.title()).size(Pixels::from(20)).wrapping(Wrapping::WordOrGlyph).center()
+        //     ]
+        //     .spacing(10)
+        //     .align_x(alignment::Horizontal::Center)
+        //     .width(Length::Fill)
+        //     //.spacing(10),
+        // )
+        // .on_press(MainMessage::Index(index))
+        // .into()
     }
 }
 
-static ICONS_SIZE: &[&str] = &["256x256", "128x128"];
 
+static ICONS_SIZE: &[&str] = &["256x256", "128x128"];
 static THEMES_LIST: &[&str] = &["breeze", "Adwaita", "Qogir"];
 
 fn get_icon_path_from_xdgicon(iconname: &str) -> Option<PathBuf> {
@@ -137,9 +143,6 @@ fn get_icon_path(iconname: &str) -> Option<PathBuf> {
 }
 
 
-// todo: replace with https://crates.io/crates/pretty_ini ?
-// konsole doesnt work with ini crate
-
 pub fn load_ini(file_path: &str) -> ini::Ini {
     let mut file = ini_file::IniFile::default();
     file.set_path(file_path);
@@ -154,36 +157,24 @@ pub fn parse_desktop_file(desktop_file_path: PathBuf) -> App {
     let mut app = App::default();
     app.desktop = desktop_file_path.clone();
     let ini = load_ini(app.desktop.to_str().unwrap());
-    if !ini.table_exists_from_str("Desktop Entry") {
-        return app;
+
+    match ini.get("Desktop Entry", "Name") {
+        Ok(item) => app.name = item.value,
+        Err(_) => {}
     }
 
-    if ini.key_exists_from_str("Desktop Entry", "Name") {
-        match ini.get("Desktop Entry", "Name") {
-            Ok(item) => {
-                app.name = item.value;
-            }
-            Err(_) => {}
-        }
+    match ini.get("Desktop Entry", "Icon") {
+        Ok(item) => app.icon = get_icon_path(&item.value),
+        Err(_) => {}
     }
 
-    if ini.key_exists_from_str("Desktop Entry", "Icon") {
-        match ini.get("Desktop Entry", "Icon") {
-            Ok(item) => {
-                //app.icon = Some(PathBuf::from(item.value));
-                app.icon = get_icon_path(&item.value);
-            }
-            Err(_) => {}
+    match ini.get("Desktop Entry", "Exec") {
+        Ok(item) => {
+            // filter out the " %F" and " %U" etc from launch commands
+            let exec = item.value.split_once(" ").map(|(first, _last)| first).unwrap_or(&item.value);
+            app.executable = Some(PathBuf::from(exec));
         }
-    }
-
-    if ini.key_exists_from_str("Desktop Entry", "Exec") {
-        match ini.get("Desktop Entry", "Exec") {
-            Ok(item) => {
-                app.executable = Some(PathBuf::from(item.value));
-            }
-            Err(_) => {}
-        }
+        Err(_) => {}
     }
 
     return app
@@ -233,15 +224,4 @@ pub fn get_all_apps() -> Vec<App> {
         }
     }
     apps
-}
-
-
-pub fn open_file_with(file_path: PathBuf, app: App) {
-    let exe_path = app.executable.unwrap();
-    let exec_path_str = exe_path.to_str().unwrap();
-    let file_path_str = file_path.to_str().unwrap();
-    let output = std::process::Command::new(exec_path_str)
-        .arg(file_path_str)
-        .output()
-        .expect("failed to execute process");
 }
