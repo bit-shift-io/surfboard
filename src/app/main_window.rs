@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use iced::{
-    event, futures::future::ok, mouse, time::Instant, touch, widget::{
+    event, futures::future::ok, keyboard::{self, key::Named}, mouse, time::Instant, touch, widget::{
         stack, 
         Canvas,
     }, Color, Element, Event, Length, Point, Subscription, Task, Theme
@@ -8,6 +8,7 @@ use iced::{
 use iced_layershell::{
     actions::LayershellCustomActions, application, reexport::{Anchor, KeyboardInteractivity, Layer}, to_layer_message, Application
 };
+use iced_runtime::Action;
 use crate::{
     components::*, 
     views::*,
@@ -17,7 +18,8 @@ use crate::{
 
 pub struct MainWindow {
     windowed: bool,
-    screen_edge: ScreenEdge,
+    size: (u32, u32),
+    dock: Dock,
     margin: (i32, i32, i32, i32), // top, right, bottom, left
     theme: iced::Theme,
     dark_mode: bool,
@@ -38,21 +40,12 @@ pub enum MainMessage {
     String(String),
     IcedEvent(Event),
     Index(usize),
-    ChangeScreenEdge(ScreenEdge),
+    Dock(Dock),
     ChangeView(View),
     KeyEnter,
     KeyExit,
     KeyPress,
     KeyRelease,
-}
-
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum View {
-    Main,
-    Configuration,
-    ApplicationLauncher,
-    // Add more views/layouts here
 }
 
 
@@ -134,8 +127,22 @@ impl MainWindow {
 
 
     fn handle_input_event(&mut self, event: &Event) -> Task<<MainWindow as iced_layershell::Application>::Message> {
-
         match event {
+            // keyboard
+            Event::Keyboard(keyboard::Event::KeyPressed {
+                key,
+                ..
+            }) => match key {
+                iced::keyboard::Key::Named(Named::Escape) => {
+                    return iced_runtime::task::effect(Action::Exit)
+                }
+                iced::keyboard::Key::Named(Named::Backspace) => {
+                    // pop stack history
+                }
+                _ => {}
+            }
+
+            // mouse
             Event::Mouse(event) => {
                 match event {
                     mouse::Event::ButtonPressed(button) => {
@@ -250,7 +257,8 @@ impl Default for MainWindow {
         // Return a default instance of MainWindow
         Self {
             windowed: true,
-            screen_edge: ScreenEdge::Top,
+            size: (600, 250),
+            dock: Dock::Top,
             margin: (0, 0, 0, 0),
             theme: iced::Theme::Light,
             dark_mode: true,
@@ -310,28 +318,28 @@ impl Application for MainWindow {
             MainMessage::IcedEvent(event) => {
                 return self.handle_input_event(&event);
             }
-            MainMessage::ChangeScreenEdge(screen_edge) => {
-                self.screen_edge = screen_edge;
-                match screen_edge {
-                    ScreenEdge::Left => {
+            MainMessage::Dock(dock) => {
+                self.dock = dock;
+                match dock {
+                    Dock::Left => {
                         return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Left | Anchor::Top | Anchor::Bottom,
                         (400, 0),
                         ))
                     }
-                    ScreenEdge::Right => {
+                    Dock::Right => {
                         return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Right | Anchor::Top | Anchor::Bottom,
                         (400, 0),
                         ))
                     }
-                    ScreenEdge::Bottom => {
+                    Dock::Bottom => {
                         return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Bottom | Anchor::Left | Anchor::Right,
                         (0, 400),
                         ))
                     }
-                    ScreenEdge::Top => {
+                    Dock::Top => {
                         return Task::done(MainMessage::AnchorSizeChange(
                         Anchor::Top | Anchor::Left | Anchor::Right,
                         (0, 400),
@@ -361,7 +369,7 @@ impl Application for MainWindow {
 
     fn subscription(&self) -> Subscription<Self::Message> {
         event::listen().map(MainMessage::IcedEvent)
-            //.map(MainMessage::MarginChange(()))
+        //event::listen_with(self.handle_input_event) // can try splitting this out?
     }
     
     fn theme(&self) -> Self::Theme {

@@ -45,10 +45,6 @@ impl ViewTrait for ApplicationLauncherView {
 
     }
     
-    fn name(&self) -> String {
-        String::from("launcher")
-    }
-    
     fn class(&self) -> View {
         View::ApplicationLauncher
     }

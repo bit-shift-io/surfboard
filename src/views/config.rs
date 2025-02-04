@@ -20,40 +20,35 @@ impl ViewTrait for ConfigurationView {
     }
 
     fn view(&self) -> Element<MainMessage> {
-
         let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::Main));
-        
         let view_launcher = Button::new(Text::new("launcher")).on_press(MainMessage::ChangeView(View::ApplicationLauncher));
         
-
-
-
-        let pick_screen_edge: PickList<'_, ScreenEdge, &[ScreenEdge], ScreenEdge, MainMessage, Theme, Renderer> = pick_list(
-            &ScreenEdge::ALL[..],
+        let pick_view: PickList<'_, View, &[View], View, MainMessage, Theme, Renderer> = pick_list(
+            &View::ALL[..],
             None,
-            MainMessage::ChangeScreenEdge,
+            MainMessage::ChangeView,
+        )
+        .placeholder("View");
+
+        let pick_dock: PickList<'_, Dock, &[Dock], Dock, MainMessage, Theme, Renderer> = pick_list(
+            &Dock::ALL[..],
+            None,
+            MainMessage::Dock,
         )
         .placeholder("Edge");
 
         row![
-            button("Tab").on_press(MainMessage::Debug("tab".into())),
-            button("q").on_press(MainMessage::Debug("q".into())),
-            button("w").on_press(MainMessage::Debug("w".into())),
-            button("e").on_press(MainMessage::Debug("e".into())),
-            pick_screen_edge,
+            pick_dock,
+            pick_view,
             view_main,
             view_launcher,
             //menu,
         ]
-        .padding(20)
-        .width(Length::Fill)
-        .into()
+            .padding(20)
+            .width(Length::Fill)
+            .into()
     }
 
-    fn name(&self) -> String {
-        String::from("configuration")
-    }
-    
     fn class(&self) -> View {
         View::Configuration
     }

@@ -73,10 +73,6 @@ impl ViewTrait for MainView {
         .into()
     }
     
-    fn name(&self) -> String {
-        String::from("compact")
-    }
-    
     fn class(&self) -> View {
         View::Main
     }

@@ -27,3 +27,7 @@ https://discourse.iced.rs/t/how-to-use-keyboard-character/424
 
 * styles, events, canvas
 https://github.com/fogarecious/iced_tutorial/blob/main/README.md
+
+# References
+
+https://github.com/airstrike/iced_receipts/tree/master
