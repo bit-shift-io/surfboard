@@ -10,12 +10,12 @@ use crate::components::*;
 
 
 #[derive(Debug, Clone)]
-pub struct ApplicationLauncherView {
+pub struct LauncherView {
     applications: Vec<App>,
 }
 
 
-impl ViewTrait for ApplicationLauncherView {
+impl ViewTrait for LauncherView {
     fn new() -> Self {
         // add apps here
         let applications = vec![
@@ -26,7 +26,7 @@ impl ViewTrait for ApplicationLauncherView {
 
         info!("Applications: {:?}", applications);
 
-        ApplicationLauncherView {
+        LauncherView {
             applications,
         }
     }
@@ -46,7 +46,7 @@ impl ViewTrait for ApplicationLauncherView {
     }
     
     fn class(&self) -> View {
-        View::ApplicationLauncher
+        View::Launcher
     }
     
     fn has_gesture(&self) -> bool {
@@ -67,5 +67,9 @@ impl ViewTrait for ApplicationLauncherView {
         }
         return Task::none()
     }
+    
+    // fn name(&self) -> &str {
+    //     "Launcher"
+    // }
 }
 

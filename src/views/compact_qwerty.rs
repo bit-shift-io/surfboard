@@ -9,13 +9,13 @@ use crate::components::*;
 
 
 #[derive(Debug, Clone)]
-pub struct MainView {
+pub struct CompactQwertyView {
 }
 
 
-impl ViewTrait for MainView {
+impl ViewTrait for CompactQwertyView {
     fn new() -> Self {
-        MainView {
+        CompactQwertyView {
         }
     }
 
@@ -74,7 +74,7 @@ impl ViewTrait for MainView {
     }
     
     fn class(&self) -> View {
-        View::Main
+        View::CompactQWERTY
     }
     
     fn has_gesture(&self) -> bool {
@@ -84,5 +84,9 @@ impl ViewTrait for MainView {
     fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
         Task::none()
     }
+
+    // fn name(&self) -> &str {
+    //     "Compact qwerty"
+    // }
 }
 

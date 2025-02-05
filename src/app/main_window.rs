@@ -8,7 +8,10 @@ use iced::{
 use iced_layershell::{
     actions::LayershellCustomActions, application, reexport::{Anchor, KeyboardInteractivity, Layer}, to_layer_message, Application
 };
-use iced_runtime::Action;
+use iced_runtime::{Action, Program};
+use std::rc::{Rc, Weak};
+use std::cell::RefCell;
+use std::fmt::Debug;
 use crate::{
     components::*, 
     views::*,
@@ -16,7 +19,9 @@ use crate::{
 };
 
 
+
 pub struct MainWindow {
+    self_ref: Option<Weak<RefCell<MainWindow>>>, // weak ref
     windowed: bool,
     size: (u32, u32),
     dock: Dock,
@@ -28,7 +33,7 @@ pub struct MainWindow {
     rmouse_start: Option<Point>,
     finger_presses: Vec<(u64, Point, Instant)>,
     current_view: View, // enum
-    views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
+    pub views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
     gesture_data: VecDeque<GestureData>,
 }
 
@@ -50,6 +55,30 @@ pub enum MainMessage {
 
 
 impl MainWindow {
+    // pub fn run(self, settings: Settings<<Self as iced_layershell::Application>::Flags>) -> std::result::Result<(), iced_layershell::Error>
+    // where
+    //     Self: 'static,
+    //     <Self as iced_layershell::Application>::Message: 'static + TryInto<LayershellCustomActions, Error = <Self as iced_layershell::Application>::Message>,
+    // {
+    //     // Use the settings to configure the application
+    //     let layer_settings = settings.layer_settings.clone();
+
+    //     // Initialize the application with the settings
+    //     iced_layershell::application::run::<Self, <Self as iced_layershell::Application>::Executor, iced_renderer::Compositor>(
+    //         settings,
+    //         iced_graphics::Settings::default(),
+    //     )
+    // }
+
+    fn initialize_self_ref(&mut self, self_rc: &Rc<RefCell<Self>>) {
+        let weak_self = Rc::downgrade(self_rc);
+        self.self_ref = Some(weak_self);
+    }
+
+    pub fn add_view(&mut self, view: Box<dyn ViewTrait>) {
+        self.views.push(view);
+    }
+    
     fn current_view(&self) -> &Box<dyn ViewTrait> {
         self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
@@ -240,22 +269,15 @@ impl MainWindow {
             start_mode: StartMode::default(),
         }
     }
+
 }
 
 
 impl Default for MainWindow {
     /// Creates a default instance of [`MainWindow`].
     fn default() -> Self {
-
-        // Add more views/layouts here
-        let views: Vec<Box<dyn ViewTrait>> = vec![
-            Box::new(MainView::new()),
-            Box::new(ConfigurationView::new()),
-            Box::new(ApplicationLauncherView::new()),
-        ];
-
-        // Return a default instance of MainWindow
-        Self {
+        let mut main = Self {
+            self_ref: None,
             windowed: true,
             size: (600, 250),
             dock: Dock::Top,
@@ -266,10 +288,17 @@ impl Default for MainWindow {
             rmouse_down: false,
             rmouse_start: None,
             finger_presses: Vec::new(),
-            current_view: View::Main,
-            views,
+            current_view: View::CompactQWERTY,
+            views: Vec::new(),
             gesture_data: VecDeque::new(),
-        }
+        };
+
+        // add views here
+        main.add_view(Box::new(CompactQwertyView::new()));
+        main.add_view(Box::new(ConfigurationView::new()));
+        main.add_view(Box::new(LauncherView::new()));
+
+        return main
     }
 }
 
@@ -282,9 +311,11 @@ impl Application for MainWindow {
 
     /// Create a new instance of [`MainWindow`].
     fn new(_flags: ()) -> (Self, Task<Self::Message>) {
-        let default_window = Self::default();
-        //default_window.windowed = true;
-        (default_window, Task::none())
+        let default = Self::default();
+        // create a weakreference to the main window
+        let main = Rc::new(RefCell::new(default));
+        main.borrow_mut().initialize_self_ref(&main);
+        (Rc::try_unwrap(main).map_err(|_| panic!("Failed to unwrap Rc")).unwrap().into_inner(), Task::none())
     }
 
     fn view(&self) -> Element<Self::Message> {
@@ -310,6 +341,7 @@ impl Application for MainWindow {
                 info!("{s}");
             }
             MainMessage::ChangeView(view) => {
+                info!("Change view to {view:?}");
                 self.current_view = view;
             }
             MainMessage::String(s) => {
@@ -382,3 +414,19 @@ impl Application for MainWindow {
 
 
 }
+
+
+
+// impl Program for MainWindow {
+//     type Message = MainMessage;
+//     type Renderer = iced_renderer::Renderer;
+//     type Theme = iced::Theme; // Add this line
+
+//     fn update(&mut self, message: MainMessage) -> Task<Self::Message> {
+//         Application::update(self, message)
+//     }
+
+//     fn view(&self) -> Element<Self::Message> {
+//         Application::view(self)
+//     }
+// }

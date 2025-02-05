@@ -20,15 +20,16 @@ impl ViewTrait for ConfigurationView {
     }
 
     fn view(&self) -> Element<MainMessage> {
-        let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::Main));
-        let view_launcher = Button::new(Text::new("launcher")).on_press(MainMessage::ChangeView(View::ApplicationLauncher));
+        let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::CompactQWERTY));
+        let view_launcher = Button::new(Text::new("launcher")).on_press(MainMessage::ChangeView(View::Launcher));
         
-        let pick_view: PickList<'_, View, &[View], View, MainMessage, Theme, Renderer> = pick_list(
-            &View::ALL[..],
-            None,
-            MainMessage::ChangeView,
-        )
-        .placeholder("View");
+        // let views = self.get_main_window().borrow().views;
+        // let pick_view: PickList<'_, View, &[View], View, MainMessage, Theme, Renderer> = pick_list(
+        //     &View::ALL[..], //this requires an enum??
+        //     None,
+        //     MainMessage::ChangeView,
+        // )
+        // .placeholder("View");
 
         let pick_dock: PickList<'_, Dock, &[Dock], Dock, MainMessage, Theme, Renderer> = pick_list(
             &Dock::ALL[..],
@@ -39,7 +40,7 @@ impl ViewTrait for ConfigurationView {
 
         row![
             pick_dock,
-            pick_view,
+            //pick_view,
             view_main,
             view_launcher,
             //menu,
@@ -60,4 +61,8 @@ impl ViewTrait for ConfigurationView {
     fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
         Task::none()
     }
+
+    // fn name(&self) -> &str {
+    //     "Settings"
+    // }
 }

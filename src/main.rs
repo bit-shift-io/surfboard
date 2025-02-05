@@ -17,7 +17,11 @@ pub fn main() -> Result<(), iced_layershell::Error> {
     functions::init_logger();
     info!("== Start Surfboard ==");
 
+    // in the future, the user may want to start the dock as the default, or the keyboard via cmdline
     let start_mode = handle_args();
+
+    //let (window, _) = MainWindow::new(());
+    //window.run();
 
     MainWindow::run(Settings {
         layer_settings: MainWindow::layer_shell_settings(start_mode),
