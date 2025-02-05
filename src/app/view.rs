@@ -2,16 +2,8 @@ use iced::{
     Element,
     Task
 };
-use std::rc::{Rc, Weak};
-use std::cell::RefCell;
 use super::*;
-
-
-
-// pub struct View<T> {
-//     pub parent: Option<Weak<RefCell<MainWindow>>>,
-//     inner: T,
-// }
+use crate::views::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum View {
@@ -28,6 +20,15 @@ impl View {
         View::Launcher,
         // Add more views/layouts here
     ];
+
+    pub fn init_views() -> Vec<Box<dyn ViewTrait>> {
+        vec![
+            Box::new(CompactQwertyView::new()),
+            Box::new(ConfigurationView::new()),
+            Box::new(LauncherView::new()),
+            // Add more views/layouts here
+        ]
+    }
 }
 
 impl std::fmt::Display for View {
@@ -46,28 +47,30 @@ impl std::fmt::Display for View {
 pub trait ViewTrait {
     fn new() -> Self where Self: Sized;
     fn view(&self) -> Element<MainMessage>;
-    fn update(&mut self, message: MainMessage) -> Task<MainMessage>;
-    //fn name(&self) -> &str;
     fn class(&self) -> View;
-    fn has_gesture(&self) -> bool;
-
-    fn set_parent(&mut self, parent: Option<Weak<RefCell<MainWindow>>>) {
-        // Default implementation does nothing
+    
+    /// Returns true if this view has a gesture to handle, false otherwise.
+    /// When a view has a gesture, a canvas is drawn on top of it to intercept
+    /// touch and mouse events. The gesture is then evaluated in the corresponding
+    /// view's `update` method.
+    fn has_gesture(&self) -> bool {
+        false
     }
 
-    fn get_parent(&self) -> Option<Rc<RefCell<MainWindow>>> {
-        // Default implementation returns None
-        None
+    fn update(&mut self, _message: MainMessage) -> Task<MainMessage> {
+        Task::none()
     }
-
-    fn get_main_window(&self) -> Rc<RefCell<MainWindow>> {
-        self.get_parent().expect("Parent not set")
-    }
-
-    // fn get_all_views(&self) -> &Vec<Box<dyn ViewTrait>> {
-    //     &self.get_main_window().borrow().views
-    // }
 }
+
+
+
+
+// pub struct View<T> {
+//     pub parent: Option<Weak<RefCell<MainWindow>>>,
+//     inner: T,
+// }
+
+
 
 // impl<T: ViewTrait> ViewTrait for View<T> {
 //     fn new() -> Self {
@@ -110,3 +113,5 @@ pub trait ViewTrait {
 //         }
 //     }
 // }
+
+

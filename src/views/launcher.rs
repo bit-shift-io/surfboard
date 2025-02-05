@@ -1,10 +1,9 @@
 use iced::{
-    widget::{
-        column, 
-        row,
-    }, Element, Length, Task
+    widget::row, 
+    Element, 
+    Length, 
+    Task
 };
-use iced_runtime::Action;
 use crate::app::*;
 use crate::components::*;
 
@@ -37,39 +36,26 @@ impl ViewTrait for LauncherView {
             self.applications
             .iter()
             .enumerate()
-            .map(|(filter_index, app)| app.view(filter_index, false))
+            .map(|(filter_index, app)| app.view(filter_index))
             .collect();
 
         row(bottom_vec).width(Length::Fill).into()
-        //column![bottom_vec].into()
-
     }
     
     fn class(&self) -> View {
         View::Launcher
     }
     
-    fn has_gesture(&self) -> bool {
-        true
-    }
-    
     fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
         match message {
             MainMessage::Index(index) => {
                 // optionally we should have each app with an on_pressed? custom widget is needed then?
-                info!("click task!");
                 self.applications[index].launch();
-                //iced_runtime::task::effect(Action::Exit)
-                //return Task::none()
-                //return Task::done(MainMessage::Launch(index))
             }
             _ => {}
         }
-        return Task::none()
+        
+        Task::none()
     }
-    
-    // fn name(&self) -> &str {
-    //     "Launcher"
-    // }
 }
 

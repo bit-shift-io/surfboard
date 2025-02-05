@@ -1,15 +1,25 @@
-use core::time;
 use std::collections::VecDeque;
-
 use iced::{
-    mouse, time::Instant, widget::{canvas::{
+    mouse, 
+    time::Instant, 
+    widget::{canvas::{
         Frame, 
         Geometry, 
         Path, 
         Program, 
-        Stroke}, text::Fragment}, Color, Gradient, Point, Rectangle, Renderer, Theme
+        Stroke}, 
+        text::Fragment}, 
+        Color, 
+        Point, 
+        Rectangle, 
+        Renderer, 
+        Theme
 };
-use iced_graphics::{geometry::{frame::{self, Backend}, LineCap, LineJoin}, text::cosmic_text::ttf_parser::feat::FeatureName};
+use iced_graphics::{
+    geometry::{
+        LineCap, 
+        LineJoin}, 
+        text::cosmic_text::ttf_parser::feat::FeatureName};
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -190,6 +200,4 @@ impl<'a, Message> Program<Message> for Gesture<'a> {
         }
         vec![frame.into_geometry()]
     }
-
-    
 }

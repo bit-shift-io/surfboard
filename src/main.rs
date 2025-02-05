@@ -20,11 +20,8 @@ pub fn main() -> Result<(), iced_layershell::Error> {
     // in the future, the user may want to start the dock as the default, or the keyboard via cmdline
     let start_mode = handle_args();
 
-    //let (window, _) = MainWindow::new(());
-    //window.run();
-
-    MainWindow::run(Settings {
-        layer_settings: MainWindow::layer_shell_settings(start_mode),
+    MainApp::run(Settings {
+        layer_settings: MainApp::layer_shell_default(start_mode),
         ..Default::default()
     })
 }

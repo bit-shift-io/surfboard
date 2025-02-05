@@ -1,27 +1,28 @@
 use std::collections::VecDeque;
 use iced::{
-    event, futures::future::ok, keyboard::{self, key::Named}, mouse, time::Instant, touch, widget::{
+    event, keyboard::{self, key::Named}, mouse, time::Instant, touch, widget::{
         stack, 
         Canvas,
     }, Color, Element, Event, Length, Point, Subscription, Task, Theme
 };
 use iced_layershell::{
-    actions::LayershellCustomActions, application, reexport::{Anchor, KeyboardInteractivity, Layer}, to_layer_message, Application
+    reexport::{Anchor, KeyboardInteractivity, Layer}, 
+    to_layer_message, 
+    Application
 };
-use iced_runtime::{Action, Program};
+use iced_runtime::Action;
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use std::fmt::Debug;
 use crate::{
     components::*, 
-    views::*,
     *,
 };
 
 
 
-pub struct MainWindow {
-    self_ref: Option<Weak<RefCell<MainWindow>>>, // weak ref
+pub struct MainApp {
+    self_ref: Option<Weak<RefCell<MainApp>>>, // weak ref
     windowed: bool,
     size: (u32, u32),
     dock: Dock,
@@ -54,31 +55,12 @@ pub enum MainMessage {
 }
 
 
-impl MainWindow {
-    // pub fn run(self, settings: Settings<<Self as iced_layershell::Application>::Flags>) -> std::result::Result<(), iced_layershell::Error>
-    // where
-    //     Self: 'static,
-    //     <Self as iced_layershell::Application>::Message: 'static + TryInto<LayershellCustomActions, Error = <Self as iced_layershell::Application>::Message>,
-    // {
-    //     // Use the settings to configure the application
-    //     let layer_settings = settings.layer_settings.clone();
-
-    //     // Initialize the application with the settings
-    //     iced_layershell::application::run::<Self, <Self as iced_layershell::Application>::Executor, iced_renderer::Compositor>(
-    //         settings,
-    //         iced_graphics::Settings::default(),
-    //     )
-    // }
-
+impl MainApp {
     fn initialize_self_ref(&mut self, self_rc: &Rc<RefCell<Self>>) {
         let weak_self = Rc::downgrade(self_rc);
         self.self_ref = Some(weak_self);
     }
 
-    pub fn add_view(&mut self, view: Box<dyn ViewTrait>) {
-        self.views.push(view);
-    }
-    
     fn current_view(&self) -> &Box<dyn ViewTrait> {
         self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
@@ -89,8 +71,8 @@ impl MainWindow {
 
     fn push_gesture_data(&mut self, position: Point) {
         // debug print out the points
-        info!("\nGesture Data:");
-        self.gesture_data.iter().for_each(|item| info!("{:?}", item));
+        // info!("\nGesture Data:");
+        // self.gesture_data.iter().for_each(|item| info!("{:?}", item));
 
         if self.gesture_data.len() > 1 {
             // distance check with the back item
@@ -124,7 +106,7 @@ impl MainWindow {
     }
 
 
-    fn move_window(&mut self, position: Point) -> Task<<main_window::MainWindow as iced_layershell::Application>::Message> {
+    fn move_window(&mut self, position: Point) -> Task<<main_app::MainApp as iced_layershell::Application>::Message> {
         // get windows initial position - the margin
         if self.rmouse_start.is_none() {
             self.rmouse_start = Some(position);
@@ -155,7 +137,7 @@ impl MainWindow {
     }
 
 
-    fn handle_input_event(&mut self, event: &Event) -> Task<<MainWindow as iced_layershell::Application>::Message> {
+    fn handle_input_event(&mut self, event: &Event) -> Task<<MainApp as iced_layershell::Application>::Message> {
         match event {
             // keyboard
             Event::Keyboard(keyboard::Event::KeyPressed {
@@ -255,8 +237,8 @@ impl MainWindow {
     }
 
     // handle layer shell settings
-    pub fn layer_shell_settings(start_mode: StartMode) -> LayerShellSettings {
-        let default = MainWindow::default();
+    pub fn layer_shell_default(start_mode: StartMode) -> LayerShellSettings {
+        let default = MainApp::default();
         // default free window mode
         LayerShellSettings {
             anchor: Anchor::Bottom | Anchor::Left, //| Anchor::Right,
@@ -273,10 +255,10 @@ impl MainWindow {
 }
 
 
-impl Default for MainWindow {
+impl Default for MainApp {
     /// Creates a default instance of [`MainWindow`].
     fn default() -> Self {
-        let mut main = Self {
+        Self {
             self_ref: None,
             windowed: true,
             size: (600, 250),
@@ -289,21 +271,14 @@ impl Default for MainWindow {
             rmouse_start: None,
             finger_presses: Vec::new(),
             current_view: View::CompactQWERTY,
-            views: Vec::new(),
+            views: View::init_views(),
             gesture_data: VecDeque::new(),
-        };
-
-        // add views here
-        main.add_view(Box::new(CompactQwertyView::new()));
-        main.add_view(Box::new(ConfigurationView::new()));
-        main.add_view(Box::new(LauncherView::new()));
-
-        return main
+        }
     }
 }
 
 
-impl Application for MainWindow {
+impl Application for MainApp {
     type Message = MainMessage;
     type Flags = ();
     type Theme = Theme;

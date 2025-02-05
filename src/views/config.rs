@@ -1,11 +1,14 @@
 use iced::{
     widget::{
-        button, 
         pick_list, 
         row, 
         Button, 
         PickList, 
-        Text}, Element, Length, Renderer, Task, Theme
+        Text}, 
+        Element, 
+        Length, 
+        Renderer, 
+        Theme
     };
 use crate::app::*;
 
@@ -23,13 +26,12 @@ impl ViewTrait for ConfigurationView {
         let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::CompactQWERTY));
         let view_launcher = Button::new(Text::new("launcher")).on_press(MainMessage::ChangeView(View::Launcher));
         
-        // let views = self.get_main_window().borrow().views;
-        // let pick_view: PickList<'_, View, &[View], View, MainMessage, Theme, Renderer> = pick_list(
-        //     &View::ALL[..], //this requires an enum??
-        //     None,
-        //     MainMessage::ChangeView,
-        // )
-        // .placeholder("View");
+        let pick_view: PickList<'_, View, &[View], View, MainMessage, Theme, Renderer> = pick_list(
+            &View::ALL[..], //this requires an enum??
+            None,
+            MainMessage::ChangeView,
+        )
+        .placeholder("View");
 
         let pick_dock: PickList<'_, Dock, &[Dock], Dock, MainMessage, Theme, Renderer> = pick_list(
             &Dock::ALL[..],
@@ -40,10 +42,9 @@ impl ViewTrait for ConfigurationView {
 
         row![
             pick_dock,
-            //pick_view,
+            pick_view,
             view_main,
             view_launcher,
-            //menu,
         ]
             .padding(20)
             .width(Length::Fill)
@@ -53,16 +54,4 @@ impl ViewTrait for ConfigurationView {
     fn class(&self) -> View {
         View::Configuration
     }
-    
-    fn has_gesture(&self) -> bool {
-        false
-    }
-    
-    fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
-        Task::none()
-    }
-
-    // fn name(&self) -> &str {
-    //     "Settings"
-    // }
 }

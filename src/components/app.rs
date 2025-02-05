@@ -1,11 +1,7 @@
-use std::collections::HashSet;
 use std::str::FromStr;
 use std::path::PathBuf;
-use iced::widget::text::Wrapping;
 use pretty_ini::{ini, ini_file};
-use walkdir::WalkDir;
-use iced::widget::{button, column, image, row, svg, text, Text};
-use iced::{alignment, Pixels};
+use iced::widget::{image, svg};
 use iced::{Element, Length};
 use crate::components::*;
 
@@ -38,10 +34,6 @@ impl App {
         }
     }
 
-    pub fn title(&self) -> &str {
-        &self.name
-    }
-
     fn icon(&self) -> Element<MainMessage> {
         match &self.icon {
             Some(path) => {
@@ -68,27 +60,10 @@ impl App {
         }
     }
 
-    pub fn description(&self) -> &str {
-        ""
-    }
-
-    pub fn view(&self, index: usize, selected: bool) -> Element<MainMessage> {
+    pub fn view(&self, index: usize) -> Element<MainMessage> {
         Key::new(self.icon())
             .on_press(MainMessage::Index(index))
             .into()
-
-        // Key::new(
-        //     column![
-        //         self.icon(),
-        //         Text::new(self.title()).size(Pixels::from(20)).wrapping(Wrapping::WordOrGlyph).center()
-        //     ]
-        //     .spacing(10)
-        //     .align_x(alignment::Horizontal::Center)
-        //     .width(Length::Fill)
-        //     //.spacing(10),
-        // )
-        // .on_press(MainMessage::Index(index))
-        // .into()
     }
 }
 
@@ -181,47 +156,47 @@ pub fn parse_desktop_file(desktop_file_path: PathBuf) -> App {
 }
 
 
-pub fn get_all_apps() -> Vec<App> {
-    // read XDG_DATA_DIRS env var
-    let xdg_data_dirs = std::env::var("XDG_DATA_DIRS").unwrap_or("/usr/share".to_string());
-    let xdg_data_dirs: Vec<&str> = xdg_data_dirs.split(':').collect();
-    // make a string sett from xdg_data_dirs
-    let mut search_dirs: HashSet<&str> = xdg_data_dirs.iter().cloned().collect();
-    search_dirs.insert("/usr/share/applications");
-    // get home dir of current user
-    let home_dir = std::env::var("HOME").unwrap();
-    let home_path = PathBuf::from(home_dir);
-    let local_share_apps = home_path.join(".local/share/applications");
-    search_dirs.insert(local_share_apps.to_str().unwrap());
-    search_dirs.insert("/usr/share/xsessions");
-    search_dirs.insert("/etc/xdg/autostart");
-    search_dirs.insert("/var/lib/snapd/desktop/applications");
-    // for each dir, search for .desktop files
-    let mut apps: Vec<App> = Vec::new();
-    for dir in search_dirs {
-        let dir = PathBuf::from(dir);
-        if !dir.exists() {
-            continue;
-        }
-        for entry in WalkDir::new(dir.clone()) {
-            if entry.is_err() {
-                continue;
-            }
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.extension().is_none() {
-                continue;
-            }
+// pub fn get_all_apps() -> Vec<App> {
+//     // read XDG_DATA_DIRS env var
+//     let xdg_data_dirs = std::env::var("XDG_DATA_DIRS").unwrap_or("/usr/share".to_string());
+//     let xdg_data_dirs: Vec<&str> = xdg_data_dirs.split(':').collect();
+//     // make a string sett from xdg_data_dirs
+//     let mut search_dirs: HashSet<&str> = xdg_data_dirs.iter().cloned().collect();
+//     search_dirs.insert("/usr/share/applications");
+//     // get home dir of current user
+//     let home_dir = std::env::var("HOME").unwrap();
+//     let home_path = PathBuf::from(home_dir);
+//     let local_share_apps = home_path.join(".local/share/applications");
+//     search_dirs.insert(local_share_apps.to_str().unwrap());
+//     search_dirs.insert("/usr/share/xsessions");
+//     search_dirs.insert("/etc/xdg/autostart");
+//     search_dirs.insert("/var/lib/snapd/desktop/applications");
+//     // for each dir, search for .desktop files
+//     let mut apps: Vec<App> = Vec::new();
+//     for dir in search_dirs {
+//         let dir = PathBuf::from(dir);
+//         if !dir.exists() {
+//             continue;
+//         }
+//         for entry in WalkDir::new(dir.clone()) {
+//             if entry.is_err() {
+//                 continue;
+//             }
+//             let entry = entry.unwrap();
+//             let path = entry.path();
+//             if path.extension().is_none() {
+//                 continue;
+//             }
 
-            if path.is_dir() {
-                continue;
-            }
+//             if path.is_dir() {
+//                 continue;
+//             }
 
-            if path.extension().unwrap() == "desktop" {
-                let app = parse_desktop_file(path.to_path_buf());
-                apps.push(app);
-            }
-        }
-    }
-    apps
-}
+//             if path.extension().unwrap() == "desktop" {
+//                 let app = parse_desktop_file(path.to_path_buf());
+//                 apps.push(app);
+//             }
+//         }
+//     }
+//     apps
+// }

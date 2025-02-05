@@ -42,8 +42,6 @@ where
     Renderer: iced::advanced::Renderer,
 {
     content: Element<'a, Message, Theme, Renderer>,
-    mouse_over: bool,
-    highlight: bool,
     on_press: Option<OnPress<'a, Message>>,
 }
 
@@ -78,8 +76,6 @@ where
         let content = content.into();
         Self {
             content,
-            mouse_over: false,
-            highlight: false,
             on_press: None,
         }
     }
@@ -89,8 +85,6 @@ where
         let content = text(s.to_string()).center().into();
         Self {
             content,
-            mouse_over: false,
-            highlight: false,
             on_press: None,
         }
     }

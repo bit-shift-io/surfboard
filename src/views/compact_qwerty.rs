@@ -2,7 +2,8 @@ use iced::{
     widget::{
         column, 
         row,
-    }, Length, Task
+    }, 
+    Length,
 };
 use crate::app::*;
 use crate::components::*;
@@ -80,13 +81,5 @@ impl ViewTrait for CompactQwertyView {
     fn has_gesture(&self) -> bool {
         true
     }
-    
-    fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
-        Task::none()
-    }
-
-    // fn name(&self) -> &str {
-    //     "Compact qwerty"
-    // }
 }
 
