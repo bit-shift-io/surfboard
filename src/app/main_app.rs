@@ -18,7 +18,6 @@ use iced::{
     Point, 
     Subscription, 
     Task, 
-    Theme
 };
 use iced_layershell::{
     reexport::{
@@ -26,8 +25,7 @@ use iced_layershell::{
         KeyboardInteractivity, 
         Layer
     }, 
-    to_layer_message, 
-    Application
+    to_layer_message,
 };
 use iced_runtime::Action;
 use std::collections::VecDeque;
@@ -50,8 +48,6 @@ pub struct MainApp {
     size: (u32, u32),
     dock: Dock,
     margin: (i32, i32, i32, i32), // top, right, bottom, left
-    theme: iced::Theme,
-    dark_mode: bool,
     lmouse_down: bool,
     rmouse_down: bool,
     rmouse_start: Option<Point>,
@@ -260,14 +256,14 @@ impl MainApp {
     }
 
     // handle layer shell settings
-    pub fn layer_shell_default(start_mode: StartMode) -> LayerShellSettings {
+    pub fn default_layer_shell(start_mode: StartMode) -> LayerShellSettings {
         let default = MainApp::default();
         // default free window mode
         LayerShellSettings {
             anchor: Anchor::Bottom | Anchor::Left, //| Anchor::Right,
             layer: Layer::Top, // Layer::Overlay if need to go the max
             exclusive_zone: -1,
-            size: Some((600, 250)), //None,
+            size: Some(default.size), //None,
             margin: default.margin,
             keyboard_interactivity: KeyboardInteractivity::OnDemand,
             events_transparent: false,
@@ -287,8 +283,6 @@ impl Default for MainApp {
             size: (600, 250),
             dock: Dock::Top,
             margin: (0, 0, 0, 0),
-            theme: iced::Theme::Light,
-            dark_mode: true,
             lmouse_down: false,
             rmouse_down: false,
             rmouse_start: None,
@@ -310,7 +304,7 @@ impl MainApp {
         (Rc::try_unwrap(main).map_err(|_| panic!("Failed to unwrap Rc")).unwrap().into_inner(), Task::none())
     }
 
-    
+
     pub fn view(&self) -> Element<MainMessage> {
         let has_gesture = self.current_view().has_gesture();
         match has_gesture {

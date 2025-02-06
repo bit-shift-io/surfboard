@@ -25,11 +25,14 @@ pub fn main() -> iced_layershell::Result {
     // in the future, the user may want to start the dock as the default, or the keyboard via cmdline
     let start_mode = handle_args();
 
+    // now we can put whatever we want into app!
+    let app = MainApp::new();
+
     application(MainApp::namespace, MainApp::update, MainApp::view)
-        .layer_settings(MainApp::layer_shell_default(start_mode))
+        .layer_settings(MainApp::default_layer_shell(start_mode))
         .style(MainApp::style)
         .subscription(MainApp::subscription)
-        .run()
+        .run_with(move || app)
 }
 
 
