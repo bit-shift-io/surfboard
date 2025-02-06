@@ -140,6 +140,7 @@ impl MainApp {
                     mouse::Event::ButtonPressed(button) => {
                         match button {
                             mouse::Button::Left => {
+                                self.gesture_handler.begin();
                                 //self.gesture_handler.clear();
                                 self.lmouse_down = true;
                             }
@@ -153,6 +154,7 @@ impl MainApp {
                     mouse::Event::ButtonReleased(button) => {
                         match button {
                             mouse::Button::Left => {
+                                self.gesture_handler.end();
                                 self.lmouse_down = false;
                             }
                             mouse::Button::Right => {

@@ -26,11 +26,21 @@ use iced_graphics::geometry::{
 
 use crate::app::*;
 
-pub struct GestureHandler {
-    gesture_data: VecDeque<GestureData>,
+static FADE_DURATION: u128 = 1500; // ms
 
+
+pub struct GestureHandler {
+    pub history: VecDeque<Gesture>,
+    pub current_gesture: Option<Gesture>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Gesture {
+    pub start_instant: Option<Instant>,
+    pub end_instant: Option<Instant>,
+    pub buffer: VecDeque<GestureData>, // buffer to store gesture data
+    // may want to store the type, left click, right click etc?
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GestureData {
@@ -41,71 +51,118 @@ pub struct GestureData {
 impl GestureHandler {
     pub fn new() -> Self {
         GestureHandler {
-            gesture_data: VecDeque::new(),
+            history: VecDeque::new(),
+            current_gesture: None,
         }
     }
 
+    pub fn get_all_gestures(&self) -> Vec<Gesture> {
+        let mut result: Vec<Gesture> = self.history.iter().cloned().collect();
+        if let Some(gesture) = self.current_gesture.as_ref() {
+            result.push(gesture.clone());
+        }
+        result
+    }
+
+    pub fn update_history(&mut self) {
+        // loop through history and remove expired gestures if end_instant is older than FADE_DURATION
+        let now = Instant::now();
+        self.history.retain(|gesture| {
+            if let Some(end_instant) = gesture.end_instant {
+                now.duration_since(end_instant).as_millis() < FADE_DURATION
+            } else {
+                true
+            }
+        });
+    }
+
     pub fn view(&self) -> Canvas<GestureView<'_>, MainMessage> {
-        Canvas::new(GestureView::new(&self.gesture_data))
+        Canvas::new(GestureView::new(self))
         .width(Length::Fill)
         .height(Length::Fill)
     }
 
-    pub fn append(&mut self, position: Point) {
-        // debug print out the points
-        // info!("\nGesture Data:");
-        // self.gesture_data.iter().for_each(|item| info!("{:?}", item));
+    pub fn begin(&mut self) {
+        
 
-        if self.gesture_data.len() > 1 {
-            // distance check with the back item
-            let prev = self.gesture_data.back().unwrap();
-            let distance = Point::distance(&prev.point, position);
-            if distance < 20.0 {
-                return;
-            }
-            
-            // time check
-            // remove the front items
-            while let Some(item) = self.gesture_data.front() {
-                let elapsed = Instant::now().duration_since(item.instant);
-                if elapsed.as_millis() > 1000 { // 2 seconds
-                    self.gesture_data.pop_front();
-                } else {
-                    break;
-                }
-            }
-
-        }
-
-        // round off the position
-        let point = Point::new(position.x.round(), position.y.round());
-
-        // add data to the back
-        self.gesture_data.push_back(GestureData {
-            point,
-            instant: Instant::now(),
+        self.current_gesture = Some(Gesture {
+            start_instant: Some(Instant::now()),
+            end_instant: None,
+            buffer: VecDeque::new(),
         });
+    }
+
+    pub fn end(&mut self) {
+        if let Some(mut gesture) = self.current_gesture.take() {
+            gesture.end_instant = Some(Instant::now());
+
+            // todo: process gesture
+
+
+            // move to history
+            self.history.push_back(gesture);
+        }
+    }
+
+    pub fn append(&mut self, position: Point) {
+        self.update_history(); // todo: need appropriate spot for this? some kind of timer based update
+
+        if let Some(gesture) = self.current_gesture.as_mut() {
+            // debug print out the points
+            // info!("\nGesture Data:");
+            // self.gesture_data.iter().for_each(|item| info!("{:?}", item));
+
+            if gesture.buffer.len() > 1 {
+                // distance check with the back/end item
+                let prev = gesture.buffer.back().unwrap();
+                let distance = Point::distance(&prev.point, position);
+                if distance < 20.0 { // spacing between points, make static
+                    return;
+                }
+                
+                // time check
+                // remove the front items
+                while let Some(item) = gesture.buffer.front() {
+                    let elapsed = Instant::now().duration_since(item.instant);
+                    if elapsed.as_millis() > 1000 { // 2 seconds
+                        gesture.buffer.pop_front();
+                    } else {
+                        break;
+                    }
+                }
+
+            }
+
+            // round off the position not needed
+            //let point = Point::new(position.x.round(), position.y.round());
+
+            // add data to the back
+            gesture.buffer.push_back(GestureData {
+                point: position,
+                instant: Instant::now(),
+            });
+        }
     }
 }
 
+
 pub struct GestureView<'a> {
-    gesture_data: &'a VecDeque<GestureData>,
+    handler: &'a GestureHandler,
 }
 
 impl<'a> GestureView<'a> {
-    pub fn new(gesture_data: &'a VecDeque<GestureData>) -> Self {
+    pub fn new(handler: &'a GestureHandler) -> Self {
         GestureView {
-            gesture_data,
+            handler,
         }
     }
 
-
-    fn draw_single_line_method(&self, mut frame: Frame) -> Frame {
+    fn draw_single_line_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
         let path = Path::new(|builder| {
-            builder.move_to(self.gesture_data.back().unwrap().point);
-            let mut prev_point = self.gesture_data.back().unwrap().point;
+            builder.move_to(gesture.buffer.back().unwrap().point);
+            let mut prev_point = gesture.buffer.back().unwrap().point;
             // quadratic_curve_to
-            for data in self.gesture_data.iter().rev().skip(1) {
+            for data in gesture.buffer.iter().rev().skip(1) {
                 let control_point = Point::new(
                     (prev_point.x + data.point.x) / 2.0,
                     (prev_point.y + data.point.y) / 2.0,
@@ -128,15 +185,14 @@ impl<'a> GestureView<'a> {
     /// Draw the gesture using the segment method.
     /// Create the path using a Builder closure
     /// create the line in reverse order
-    fn draw_line_segment_method(&self, mut frame: Frame) -> Frame {
-        let gesture_data = self.gesture_data.clone();
+    fn draw_line_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
+        //let gesture_data = self.gesture_data.clone();
         let max_width = 16u128; // Max initial width
         let max_opacity = 0.3; // Max initial opacity
-        let fade_duration = 1000u128; // ms duration for fading
         let now = Instant::now();
-        let mut prev_point = gesture_data.back().unwrap().point;
+        let mut prev_point = gesture.buffer.back().unwrap().point;
 
-        for (i, data) in gesture_data.iter().enumerate().rev().skip(1) {
+        for (i, data) in gesture.buffer.iter().enumerate().rev().skip(1) {
             // draw curve
             let next_point = data.point;
 
@@ -149,13 +205,13 @@ impl<'a> GestureView<'a> {
 
             // apply styling to curve
             let time_elapsed = now.duration_since(data.instant).as_millis();
-            if time_elapsed > fade_duration {
+            if time_elapsed > FADE_DURATION {
                 return frame;
             }
 
             //let progress = 1.0 - (time_elapsed / fade_duration);
             // Calculate fade progress using integer math for time_elapsed and fade_duration
-            let progress = (fade_duration - time_elapsed) as f32 / fade_duration as f32;
+            let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
 
             //let width = max_width * progress; // width narrows
             //let opacity = max_opacity * progress; // fade out
@@ -182,14 +238,13 @@ impl<'a> GestureView<'a> {
     /// Draw the gesture using the segment method.
     /// Create the path using a Builder closure
     /// create the line in reverse order
-    fn draw_segment_method(&self, mut frame: Frame) -> Frame {
+    fn draw_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
         let max_width = 16u128; // Max initial width
         let max_opacity = 0.3; // Max initial opacity
-        let fade_duration = 1000u128; // ms duration for fading
         let now = Instant::now();
-        let mut prev_point = self.gesture_data.back().unwrap().point;
+        let mut prev_point = gesture.buffer.back().unwrap().point;
 
-        for (i, data) in self.gesture_data.iter().enumerate().rev().skip(1) {
+        for (i, data) in gesture.buffer.iter().enumerate().rev().skip(1) {
             // draw curve
             let next_point = data.point;
 
@@ -212,20 +267,20 @@ impl<'a> GestureView<'a> {
             prev_point = next_point;
 
             // apply styling to curve
-            // let time_elapsed = now.duration_since(data.instant).as_millis();
-            // if time_elapsed > fade_duration {
-            //     return frame;
-            // }
+            let time_elapsed = now.duration_since(data.instant).as_millis();
+            if time_elapsed > FADE_DURATION {
+                return frame;
+            }
 
             // Calculate fade progress using integer math for time_elapsed and fade_duration
             // Calculate width and opacity based on progress
-            // let progress = (fade_duration - time_elapsed) as f32 / fade_duration as f32;
-            // let width = (max_width as f32 * progress).max(1.0); // Ensure width doesn't go below 1.0
-            // let opacity = (max_opacity * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
+            let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
+            let width = (max_width as f32 * progress).max(1.0); // Ensure width doesn't go below 1.0
+            let opacity = (max_opacity * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
 
             // debug
-            let opacity = 0.5;
-            let width = 16.0;
+            //let opacity = 0.5;
+            //let width = 16.0;
 
             frame.stroke(
                 &path,
@@ -254,10 +309,15 @@ impl<'a, Message> Program<Message> for GestureView<'a> {
         _cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
         //info!("{}", self.gesture_data.len());
-        let frame = Frame::new(renderer, bounds.size());
-        if self.gesture_data.len() > 4 {
-            return vec![self.draw_segment_method(frame).into_geometry()]
+        let mut frame = Frame::new(renderer, bounds.size());
+
+        // draw all gestures
+        for gesture in self.handler.get_all_gestures().iter() {
+            if gesture.buffer.len() > 1 {
+                frame = self.draw_segment_method(gesture, frame);
+            }
         }
+
         vec![frame.into_geometry()]
     }
 }
