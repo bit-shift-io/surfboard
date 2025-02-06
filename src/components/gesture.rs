@@ -1,25 +1,35 @@
 use std::collections::VecDeque;
 use iced::{
     mouse, 
-    time::Instant, 
-    widget::{canvas::{
-        Frame, 
-        Geometry, 
-        Path, 
-        Program, 
-        Stroke}, 
-        text::Fragment}, 
-        Color, 
-        Point, 
-        Rectangle, 
-        Renderer, 
-        Theme
+    time::Instant,
+    widget::{
+        Canvas,
+        canvas::{
+            Frame, 
+            Geometry, 
+            Path, 
+            Program, 
+            Stroke
+        },
+    }, 
+    Color, 
+    Point, 
+    Rectangle, 
+    Renderer, 
+    Theme,
+    Length,
 };
-use iced_graphics::{
-    geometry::{
+use iced_graphics::geometry::{
         LineCap, 
-        LineJoin}, 
-        text::cosmic_text::ttf_parser::feat::FeatureName};
+        LineJoin,
+    };
+
+use crate::app::*;
+
+pub struct GestureHandler {
+    gesture_data: VecDeque<GestureData>,
+
+}
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -28,13 +38,63 @@ pub struct GestureData {
     pub instant: Instant,
 }
 
-pub struct Gesture<'a> {
+impl GestureHandler {
+    pub fn new() -> Self {
+        GestureHandler {
+            gesture_data: VecDeque::new(),
+        }
+    }
+
+    pub fn view(&self) -> Canvas<GestureView<'_>, MainMessage> {
+        Canvas::new(GestureView::new(&self.gesture_data))
+        .width(Length::Fill)
+        .height(Length::Fill)
+    }
+
+    pub fn append(&mut self, position: Point) {
+        // debug print out the points
+        // info!("\nGesture Data:");
+        // self.gesture_data.iter().for_each(|item| info!("{:?}", item));
+
+        if self.gesture_data.len() > 1 {
+            // distance check with the back item
+            let prev = self.gesture_data.back().unwrap();
+            let distance = Point::distance(&prev.point, position);
+            if distance < 20.0 {
+                return;
+            }
+            
+            // time check
+            // remove the front items
+            while let Some(item) = self.gesture_data.front() {
+                let elapsed = Instant::now().duration_since(item.instant);
+                if elapsed.as_millis() > 1000 { // 2 seconds
+                    self.gesture_data.pop_front();
+                } else {
+                    break;
+                }
+            }
+
+        }
+
+        // round off the position
+        let point = Point::new(position.x.round(), position.y.round());
+
+        // add data to the back
+        self.gesture_data.push_back(GestureData {
+            point,
+            instant: Instant::now(),
+        });
+    }
+}
+
+pub struct GestureView<'a> {
     gesture_data: &'a VecDeque<GestureData>,
 }
 
-impl<'a> Gesture<'a> {
+impl<'a> GestureView<'a> {
     pub fn new(gesture_data: &'a VecDeque<GestureData>) -> Self {
-        Gesture {
+        GestureView {
             gesture_data,
         }
     }
@@ -182,7 +242,7 @@ impl<'a> Gesture<'a> {
     }
 }
 
-impl<'a, Message> Program<Message> for Gesture<'a> {
+impl<'a, Message> Program<Message> for GestureView<'a> {
     type State = ();
 
     fn draw(

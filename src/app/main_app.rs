@@ -7,14 +7,10 @@ use iced::{
     mouse, 
     time::Instant, 
     touch, 
-    widget::{
-        stack, 
-        Canvas,
-    }, 
+    widget::stack, 
     Color, 
     Element, 
     Event, 
-    Length, 
     Point, 
     Subscription, 
     Task, 
@@ -28,7 +24,6 @@ use iced_layershell::{
     to_layer_message,
 };
 use iced_runtime::Action;
-use std::collections::VecDeque;
 use std::rc::{
     Rc, 
     Weak
@@ -54,7 +49,7 @@ pub struct MainApp {
     finger_presses: Vec<(u64, Point, Instant)>,
     current_view: View, // enum
     pub views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
-    gesture_data: VecDeque<GestureData>,
+    gesture_handler: GestureHandler,
 }
 
 
@@ -88,41 +83,6 @@ impl MainApp {
         self.views.iter_mut().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
 
-    fn push_gesture_data(&mut self, position: Point) {
-        // debug print out the points
-        // info!("\nGesture Data:");
-        // self.gesture_data.iter().for_each(|item| info!("{:?}", item));
-
-        if self.gesture_data.len() > 1 {
-            // distance check with the back item
-            let prev = self.gesture_data.back().unwrap();
-            let distance = Point::distance(&prev.point, position);
-            if distance < 20.0 {
-                return;
-            }
-            
-            // time check
-            // remove the front items
-            while let Some(item) = self.gesture_data.front() {
-                let elapsed = Instant::now().duration_since(item.instant);
-                if elapsed.as_millis() > 1000 { // 2 seconds
-                    self.gesture_data.pop_front();
-                } else {
-                    break;
-                }
-            }
-
-        }
-
-        // round off the position
-        let point = Point::new(position.x.round(), position.y.round());
-
-        // add data to the back
-        self.gesture_data.push_back(GestureData {
-            point,
-            instant: Instant::now(),
-        });
-    }
 
 
     fn move_window(&mut self, position: Point) -> Task<MainMessage> {
@@ -158,6 +118,8 @@ impl MainApp {
 
     fn handle_input_event(&mut self, event: &Event) -> Task<MainMessage> {
         match event {
+            //Event::Window(event) => todo!(),
+
             // keyboard
             Event::Keyboard(keyboard::Event::KeyPressed {
                 key,
@@ -178,7 +140,7 @@ impl MainApp {
                     mouse::Event::ButtonPressed(button) => {
                         match button {
                             mouse::Button::Left => {
-                                self.gesture_data.clear();
+                                //self.gesture_handler.clear();
                                 self.lmouse_down = true;
                             }
                             mouse::Button::Right => {
@@ -201,7 +163,7 @@ impl MainApp {
                     }
                     mouse::Event::CursorMoved { position } => {
                         if self.lmouse_down {
-                            self.push_gesture_data(*position);
+                            self.gesture_handler.append(*position);
                         }
                         if self.rmouse_down {
                             if self.rmouse_down {
@@ -213,8 +175,8 @@ impl MainApp {
                     
                 }
             }
-            //Event::Keyboard(event) => todo!(),
-            //Event::Window(event) => todo!(),
+
+            // touch
             Event::Touch(event) => {
                 match event {
                     touch::Event::FingerPressed { id, position} => {
@@ -256,7 +218,7 @@ impl MainApp {
     }
 
     // handle layer shell settings
-    pub fn default_layer_shell(start_mode: StartMode) -> LayerShellSettings {
+    pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
         let default = MainApp::default();
         // default free window mode
         LayerShellSettings {
@@ -289,7 +251,7 @@ impl Default for MainApp {
             finger_presses: Vec::new(),
             current_view: View::CompactQWERTY,
             views: View::init_views(),
-            gesture_data: VecDeque::new(),
+            gesture_handler: GestureHandler::new(),
         }
     }
 }
@@ -311,7 +273,7 @@ impl MainApp {
             true => {
                 return stack![
                     self.current_view().view(),
-                    Canvas::new(Gesture::new(&self.gesture_data)).width(Length::Fill).height(Length::Fill)
+                    self.gesture_handler.view(),
                 ]
                 .into()
             }
