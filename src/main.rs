@@ -1,8 +1,13 @@
 #[macro_use]
 extern crate log;
 
-use iced_layershell::settings::{LayerShellSettings, Settings, StartMode};
-use iced_layershell::Application;
+use iced_layershell::{
+    settings::{
+        LayerShellSettings, 
+        StartMode
+    },
+    build_pattern::application,
+};
 
 mod app;
 mod utils;
@@ -12,7 +17,7 @@ use utils::*;
 use app::*;
 
 
-pub fn main() -> Result<(), iced_layershell::Error> {
+pub fn main() -> iced_layershell::Result {
     functions::init_env_var();
     functions::init_logger();
     info!("== Start Surfboard ==");
@@ -20,10 +25,11 @@ pub fn main() -> Result<(), iced_layershell::Error> {
     // in the future, the user may want to start the dock as the default, or the keyboard via cmdline
     let start_mode = handle_args();
 
-    MainApp::run(Settings {
-        layer_settings: MainApp::layer_shell_default(start_mode),
-        ..Default::default()
-    })
+    application(MainApp::namespace, MainApp::update, MainApp::view)
+        .layer_settings(MainApp::layer_shell_default(start_mode))
+        .style(MainApp::style)
+        .subscription(MainApp::subscription)
+        .run()
 }
 
 

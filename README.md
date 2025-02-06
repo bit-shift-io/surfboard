@@ -31,3 +31,7 @@ https://github.com/fogarecious/iced_tutorial/blob/main/README.md
 # References
 
 https://github.com/airstrike/iced_receipts/tree/master
+
+https://stackoverflow.com/questions/69352653/how-to-create-a-simple-parent-children-structure-with-the-plain-references
+
+https://users.rust-lang.org/t/building-c-like-self-registrering-factory-in-rust/14146

@@ -1,17 +1,40 @@
-use std::collections::VecDeque;
 use iced::{
-    event, keyboard::{self, key::Named}, mouse, time::Instant, touch, widget::{
+    event, 
+    keyboard::{
+        self, 
+        key::Named
+    }, 
+    mouse, 
+    time::Instant, 
+    touch, 
+    widget::{
         stack, 
         Canvas,
-    }, Color, Element, Event, Length, Point, Subscription, Task, Theme
+    }, 
+    Color, 
+    Element, 
+    Event, 
+    Length, 
+    Point, 
+    Subscription, 
+    Task, 
+    Theme
 };
 use iced_layershell::{
-    reexport::{Anchor, KeyboardInteractivity, Layer}, 
+    reexport::{
+        Anchor, 
+        KeyboardInteractivity, 
+        Layer
+    }, 
     to_layer_message, 
     Application
 };
 use iced_runtime::Action;
-use std::rc::{Rc, Weak};
+use std::collections::VecDeque;
+use std::rc::{
+    Rc, 
+    Weak
+};
 use std::cell::RefCell;
 use std::fmt::Debug;
 use crate::{
@@ -106,7 +129,7 @@ impl MainApp {
     }
 
 
-    fn move_window(&mut self, position: Point) -> Task<<main_app::MainApp as iced_layershell::Application>::Message> {
+    fn move_window(&mut self, position: Point) -> Task<MainMessage> {
         // get windows initial position - the margin
         if self.rmouse_start.is_none() {
             self.rmouse_start = Some(position);
@@ -137,7 +160,7 @@ impl MainApp {
     }
 
 
-    fn handle_input_event(&mut self, event: &Event) -> Task<<MainApp as iced_layershell::Application>::Message> {
+    fn handle_input_event(&mut self, event: &Event) -> Task<MainMessage> {
         match event {
             // keyboard
             Event::Keyboard(keyboard::Event::KeyPressed {
@@ -278,14 +301,8 @@ impl Default for MainApp {
 }
 
 
-impl Application for MainApp {
-    type Message = MainMessage;
-    type Flags = ();
-    type Theme = Theme;
-    type Executor = iced::executor::Default;
-
-    /// Create a new instance of [`MainWindow`].
-    fn new(_flags: ()) -> (Self, Task<Self::Message>) {
+impl MainApp {
+    pub fn new() -> (Self, Task<MainMessage>) {
         let default = Self::default();
         // create a weakreference to the main window
         let main = Rc::new(RefCell::new(default));
@@ -293,7 +310,8 @@ impl Application for MainApp {
         (Rc::try_unwrap(main).map_err(|_| panic!("Failed to unwrap Rc")).unwrap().into_inner(), Task::none())
     }
 
-    fn view(&self) -> Element<Self::Message> {
+    
+    pub fn view(&self) -> Element<MainMessage> {
         let has_gesture = self.current_view().has_gesture();
         match has_gesture {
             true => {
@@ -310,7 +328,7 @@ impl Application for MainApp {
     }
 
 
-    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
+    pub fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
         match message {
             MainMessage::Debug(s) => {
                 info!("{s}");
@@ -362,7 +380,7 @@ impl Application for MainApp {
     }
 
 
-    fn style(&self, theme: &Self::Theme) -> iced_layershell::Appearance {
+    pub fn style(&self, theme: &iced::Theme) -> iced_layershell::Appearance {
         iced_layershell::Appearance {
             //background_color: Color::TRANSPARENT,
             background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.5),
@@ -370,38 +388,13 @@ impl Application for MainApp {
         }
     }
 
-    fn namespace(&self) -> String {
+    pub fn namespace(&self) -> String {
         String::from("surfboard")
     }
 
-    fn subscription(&self) -> Subscription<Self::Message> {
+    pub fn subscription(&self) -> Subscription<MainMessage> {
         event::listen().map(MainMessage::IcedEvent)
         //event::listen_with(self.handle_input_event) // can try splitting this out?
     }
-    
-    fn theme(&self) -> Self::Theme {
-        Self::Theme::default()
-    }
-    
-    fn scale_factor(&self) -> f64 {
-        1.0
-    }
-
 
 }
-
-
-
-// impl Program for MainWindow {
-//     type Message = MainMessage;
-//     type Renderer = iced_renderer::Renderer;
-//     type Theme = iced::Theme; // Add this line
-
-//     fn update(&mut self, message: MainMessage) -> Task<Self::Message> {
-//         Application::update(self, message)
-//     }
-
-//     fn view(&self) -> Element<Self::Message> {
-//         Application::view(self)
-//     }
-// }
