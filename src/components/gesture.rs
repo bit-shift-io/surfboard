@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-use std::f64::consts::PI;
 use iced::{
     mouse, 
     time::Instant,
@@ -36,7 +34,7 @@ static MIN_DISTANCE: f32 = 20.0; // pixels
 
 
 pub struct GestureHandler {
-    pub history: VecDeque<Gesture>,
+    pub history: Vec<Gesture>,
     pub current_gesture: Option<Gesture>,
 }
 
@@ -44,7 +42,7 @@ pub struct GestureHandler {
 pub struct Gesture {
     pub start_instant: Option<Instant>,
     pub end_instant: Option<Instant>,
-    pub buffer: VecDeque<GestureData>, // buffer to store gesture data
+    pub buffer: Vec<GestureData>, // buffer to store gesture data
     // may want to store the type, left click, right click etc?
 }
 
@@ -70,7 +68,7 @@ enum ActionDirection {
 impl GestureHandler {
     pub fn new() -> Self {
         GestureHandler {
-            history: VecDeque::new(),
+            history: Vec::new(),
             current_gesture: None,
         }
     }
@@ -105,14 +103,14 @@ impl GestureHandler {
         self.current_gesture = Some(Gesture {
             start_instant: Some(Instant::now()),
             end_instant: None,
-            buffer: VecDeque::new(),
+            buffer: Vec::new(),
         });
     }
 
     pub fn end(&mut self) {
         if let Some(mut gesture) = self.current_gesture.take() {
             gesture.end_instant = Some(Instant::now());
-            self.history.push_back(gesture.clone()); // clone to history
+            self.history.push(gesture.clone()); // clone to history
 
             match gesture.end_instant.unwrap().duration_since(gesture.start_instant.unwrap()).as_millis() {
                 duration if duration < ACTION_GESTURE_DURATION => {
@@ -131,26 +129,14 @@ impl GestureHandler {
         if let Some(gesture) = self.current_gesture.as_mut() {
             if gesture.buffer.len() > 1 {
                 // distance check with the back/end item
-                let prev = gesture.buffer.back().unwrap();
+                let prev = gesture.buffer.last().unwrap();
                 let distance = Point::distance(&prev.point, position);
                 if distance < MIN_DISTANCE {
                     return;
                 }
-                
-                // time check
-                // remove the front items
-                while let Some(item) = gesture.buffer.front() {
-                    let elapsed = Instant::now().duration_since(item.instant);
-                    if elapsed.as_millis() > 1000 { // 2 seconds
-                        gesture.buffer.pop_front();
-                    } else {
-                        break;
-                    }
-                }
-
             }
 
-            gesture.buffer.push_back(GestureData {
+            gesture.buffer.push(GestureData {
                 point: position,
                 instant: Instant::now(),
             });
@@ -158,8 +144,8 @@ impl GestureHandler {
     }
 
     fn handle_action_gesture(&mut self, gesture: Gesture) {
-        let start = gesture.buffer.front().unwrap().point;
-        let end = gesture.buffer.back().unwrap().point;
+        let start = gesture.buffer.first().unwrap().point;
+        let end = gesture.buffer.last().unwrap().point;
         let angle = functions::calculate_angle_degrees(start, end);
         let normalized_angle = (angle + 90.0).rem_euclid(360.0); // adjust and normalize to 0-360 range
 
@@ -197,8 +183,8 @@ impl<'a> GestureView<'a> {
 
     fn draw_single_line_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
         let path = Path::new(|builder| {
-            builder.move_to(gesture.buffer.back().unwrap().point);
-            let mut prev_point = gesture.buffer.back().unwrap().point;
+            builder.move_to(gesture.buffer.last().unwrap().point);
+            let mut prev_point = gesture.buffer.last().unwrap().point;
             // quadratic_curve_to
             for data in gesture.buffer.iter().rev().skip(1) {
                 let control_point = Point::new(
@@ -228,7 +214,7 @@ impl<'a> GestureView<'a> {
         let max_width = 16u128; // Max initial width
         let max_opacity = 0.3; // Max initial opacity
         let now = Instant::now();
-        let mut prev_point = gesture.buffer.back().unwrap().point;
+        let mut prev_point = gesture.buffer.last().unwrap().point;
 
         for (i, data) in gesture.buffer.iter().enumerate().rev().skip(1) {
             // draw curve
@@ -258,8 +244,8 @@ impl<'a> GestureView<'a> {
             let opacity = (max_opacity * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
 
             // debug
-            let opacity = 0.5;
-            let width = 16.0;
+            //let opacity = 0.5;
+            //let width = 16.0;
 
             frame.stroke(
                 &path,
@@ -280,9 +266,9 @@ impl<'a> GestureView<'a> {
         let max_width = 20u128; // Max initial width
         let max_opacity = 0.3; // Max initial opacity
         let now = Instant::now();
-        let mut prev_point = gesture.buffer.back().unwrap().point;
+        let mut prev_point = gesture.buffer.last().unwrap().point;
 
-        for (i, data) in gesture.buffer.iter().enumerate().rev().skip(1) {
+        for (_i, data) in gesture.buffer.iter().enumerate().rev() {
             // draw curve
             let next_point = data.point;
 
