@@ -140,7 +140,7 @@ impl MainApp {
                     mouse::Event::ButtonPressed(button) => {
                         match button {
                             mouse::Button::Left => {
-                                self.gesture_handler.begin();
+                                self.gesture_handler.start();
                                 //self.gesture_handler.clear();
                                 self.lmouse_down = true;
                             }
@@ -191,7 +191,7 @@ impl MainApp {
                             }
                         }
                     }
-                    touch::Event::FingerLifted { id, position} | touch::Event::FingerLost { id, position} => {
+                    touch::Event::FingerLifted { id, ..} | touch::Event::FingerLost { id, ..} => {
                         self.finger_presses.retain(|(fid, _, _)| *fid != id.0);
                         //todo
                     }
@@ -270,6 +270,7 @@ impl MainApp {
 
 
     pub fn view(&self) -> Element<MainMessage> {
+        //info!("view draw");
         let has_gesture = self.current_view().has_gesture();
         match has_gesture {
             true => {

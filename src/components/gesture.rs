@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::f64::consts::PI;
 use iced::{
     mouse, 
     time::Instant,
@@ -24,9 +25,14 @@ use iced_graphics::geometry::{
         LineJoin,
     };
 
-use crate::app::*;
+use crate::{
+    app::*,
+    utils::*,
+};
 
 static FADE_DURATION: u128 = 1500; // ms
+static ACTION_GESTURE_DURATION: u128 = 250; // ms
+static MIN_DISTANCE: f32 = 20.0; // pixels
 
 
 pub struct GestureHandler {
@@ -46,6 +52,19 @@ pub struct Gesture {
 pub struct GestureData {
     pub point: Point,
     pub instant: Instant,
+}
+
+
+#[derive(Debug)]
+enum ActionDirection {
+    TopLeft,
+    Top,
+    TopRight,
+    Right,
+    BottomRight,
+    Bottom,
+    BottomLeft,
+    Left,
 }
 
 impl GestureHandler {
@@ -78,13 +97,11 @@ impl GestureHandler {
 
     pub fn view(&self) -> Canvas<GestureView<'_>, MainMessage> {
         Canvas::new(GestureView::new(self))
-        .width(Length::Fill)
-        .height(Length::Fill)
+            .width(Length::Fill)
+            .height(Length::Fill)
     }
 
-    pub fn begin(&mut self) {
-        
-
+    pub fn start(&mut self) {
         self.current_gesture = Some(Gesture {
             start_instant: Some(Instant::now()),
             end_instant: None,
@@ -95,12 +112,16 @@ impl GestureHandler {
     pub fn end(&mut self) {
         if let Some(mut gesture) = self.current_gesture.take() {
             gesture.end_instant = Some(Instant::now());
+            self.history.push_back(gesture.clone()); // clone to history
 
-            // todo: process gesture
-
-
-            // move to history
-            self.history.push_back(gesture);
+            match gesture.end_instant.unwrap().duration_since(gesture.start_instant.unwrap()).as_millis() {
+                duration if duration < ACTION_GESTURE_DURATION => {
+                    self.handle_action_gesture(gesture);
+                }
+                _ => {
+                    self.handle_view_gesture(gesture);
+                }
+            }
         }
     }
 
@@ -108,15 +129,11 @@ impl GestureHandler {
         self.update_history(); // todo: need appropriate spot for this? some kind of timer based update
 
         if let Some(gesture) = self.current_gesture.as_mut() {
-            // debug print out the points
-            // info!("\nGesture Data:");
-            // self.gesture_data.iter().for_each(|item| info!("{:?}", item));
-
             if gesture.buffer.len() > 1 {
                 // distance check with the back/end item
                 let prev = gesture.buffer.back().unwrap();
                 let distance = Point::distance(&prev.point, position);
-                if distance < 20.0 { // spacing between points, make static
+                if distance < MIN_DISTANCE {
                     return;
                 }
                 
@@ -133,15 +150,36 @@ impl GestureHandler {
 
             }
 
-            // round off the position not needed
-            //let point = Point::new(position.x.round(), position.y.round());
-
-            // add data to the back
             gesture.buffer.push_back(GestureData {
                 point: position,
                 instant: Instant::now(),
             });
         }
+    }
+
+    fn handle_action_gesture(&mut self, gesture: Gesture) {
+        let start = gesture.buffer.front().unwrap().point;
+        let end = gesture.buffer.back().unwrap().point;
+        let angle = functions::calculate_angle_degrees(start, end);
+        let normalized_angle = (angle + 90.0).rem_euclid(360.0); // adjust and normalize to 0-360 range
+
+        // weighted direction with 50-degree ranges for 45-degree angles
+        let direction = match normalized_angle {
+            x if x < 20.0 || x >= 340.0 => ActionDirection::Top,
+            x if x < 70.0 => ActionDirection::TopRight,
+            x if x < 110.0 => ActionDirection::Right,
+            x if x < 160.0 => ActionDirection::BottomRight,
+            x if x < 200.0 => ActionDirection::Bottom,
+            x if x < 250.0 => ActionDirection::BottomLeft,
+            x if x < 290.0 => ActionDirection::Left,
+            _ => ActionDirection::TopLeft,
+        };
+
+        info!("action gesture {:?} {:?}", normalized_angle, direction);
+    }
+
+    fn handle_view_gesture(&mut self, gesture: Gesture) {
+        info!("view gesture");
     }
 }
 
@@ -239,7 +277,7 @@ impl<'a> GestureView<'a> {
     /// Create the path using a Builder closure
     /// create the line in reverse order
     fn draw_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
-        let max_width = 16u128; // Max initial width
+        let max_width = 20u128; // Max initial width
         let max_opacity = 0.3; // Max initial opacity
         let now = Instant::now();
         let mut prev_point = gesture.buffer.back().unwrap().point;
