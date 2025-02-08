@@ -46,18 +46,20 @@ impl std::fmt::Display for View {
 
 pub trait ViewTrait {
     fn new() -> Self where Self: Sized;
-    fn view(&self) -> Element<MainMessage>;
+    fn view(&self) -> Element<main_app::Message>;
     fn class(&self) -> View;
     
     /// Returns true if this view has a gesture to handle, false otherwise.
     /// When a view has a gesture, a canvas is drawn on top of it to intercept
     /// touch and mouse events. The gesture is then evaluated in the corresponding
     /// view's `update` method.
-    fn has_gesture(&self) -> bool {
+    fn has_gesture(&self) -> bool { 
+        // todo should this be a subscription? or just send a message when the view is changed?
+        // todo remove this fn and make it a message?
         false
     }
 
-    fn update(&mut self, _message: MainMessage) -> Task<MainMessage> {
+    fn update(&mut self, _message: Message) -> Task<Message> {
         Task::none()
     }
 }

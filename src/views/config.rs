@@ -22,21 +22,21 @@ impl ViewTrait for ConfigurationView {
         ConfigurationView{}
     }
 
-    fn view(&self) -> Element<MainMessage> {
-        let view_main = Button::new(Text::new("main")).on_press(MainMessage::ChangeView(View::CompactQWERTY));
-        let view_launcher = Button::new(Text::new("launcher")).on_press(MainMessage::ChangeView(View::Launcher));
+    fn view(&self) -> Element<main_app::Message> {
+        let view_main = Button::new(Text::new("main")).on_press(main_app::Message::ChangeView(View::CompactQWERTY));
+        let view_launcher = Button::new(Text::new("launcher")).on_press(main_app::Message::ChangeView(View::Launcher));
         
-        let pick_view: PickList<'_, View, &[View], View, MainMessage, Theme, Renderer> = pick_list(
+        let pick_view: PickList<'_, View, &[View], View, main_app::Message, Theme, Renderer> = pick_list(
             &View::ALL[..], //this requires an enum??
             None,
-            MainMessage::ChangeView,
+            main_app::Message::ChangeView,
         )
         .placeholder("View");
 
-        let pick_dock: PickList<'_, Dock, &[Dock], Dock, MainMessage, Theme, Renderer> = pick_list(
+        let pick_dock: PickList<'_, Dock, &[Dock], Dock, main_app::Message, Theme, Renderer> = pick_list(
             &Dock::ALL[..],
             None,
-            MainMessage::Dock,
+            |dock| main_app::Message::WindowMessage(window::Message::Dock(dock)),
         )
         .placeholder("Edge");
 

@@ -1,22 +1,27 @@
 use iced::{
     mouse, 
-    time::Instant,
     widget::{
-        Canvas,
         canvas::{
             Frame, 
             Geometry, 
             Path, 
             Program, 
             Stroke
-        },
+        }, Canvas
     }, 
     Color, 
+    Length, 
     Point, 
     Rectangle, 
     Renderer, 
+    Task, 
     Theme,
-    Length,
+    Subscription,
+    time::{
+        self, 
+        Duration, 
+        Instant,
+    },
 };
 use iced_graphics::geometry::{
         LineCap, 
@@ -33,9 +38,16 @@ static ACTION_GESTURE_DURATION: u128 = 250; // ms
 static MIN_DISTANCE: f32 = 20.0; // pixels
 
 
+#[derive(Debug, Clone)]
+pub enum Message {
+    Debug(String),
+    Tick,
+}
+
 pub struct GestureHandler {
     pub history: Vec<Gesture>,
     pub current_gesture: Option<Gesture>,
+    pub timer_enabled: bool, // for animation to complete after gesture
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -53,8 +65,8 @@ pub struct GestureData {
 }
 
 
-#[derive(Debug)]
-enum ActionDirection {
+#[derive(Debug, Clone)]
+pub enum ActionDirection {
     TopLeft,
     Top,
     TopRight,
@@ -70,6 +82,19 @@ impl GestureHandler {
         GestureHandler {
             history: Vec::new(),
             current_gesture: None,
+            timer_enabled: false,
+        }
+    }
+
+    pub fn update(&mut self, message: Message) -> Task<Message> {
+        info!("gesture update");
+        Task::none()
+    }
+
+    pub fn subscription(&self) -> Subscription<Message> {
+        match self.timer_enabled {
+            true => time::every(Duration::from_millis(100)).map(|_| Message::Tick), // every function not found in iced::time?!
+            false => Subscription::none()
         }
     }
 
@@ -93,7 +118,7 @@ impl GestureHandler {
         });
     }
 
-    pub fn view(&self) -> Canvas<GestureView<'_>, MainMessage> {
+    pub fn view(&self) -> Canvas<GestureView<'_>, main_app::Message> {
         Canvas::new(GestureView::new(self))
             .width(Length::Fill)
             .height(Length::Fill)
@@ -109,6 +134,9 @@ impl GestureHandler {
 
     pub fn end(&mut self) {
         if let Some(mut gesture) = self.current_gesture.take() {
+            if gesture.buffer.is_empty() {
+                return;
+            }
             gesture.end_instant = Some(Instant::now());
             self.history.push(gesture.clone()); // clone to history
 
@@ -161,7 +189,7 @@ impl GestureHandler {
             _ => ActionDirection::TopLeft,
         };
 
-        info!("action gesture {:?} {:?}", normalized_angle, direction);
+        let _ = Task::perform(async { main_app::Message::ActionGesture(direction) }, |result | result);
     }
 
     fn handle_view_gesture(&mut self, gesture: Gesture) {

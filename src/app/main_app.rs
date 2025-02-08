@@ -39,10 +39,6 @@ use crate::{
 
 pub struct MainApp {
     self_ref: Option<Weak<RefCell<MainApp>>>, // weak ref
-    windowed: bool,
-    size: (u32, u32),
-    dock: Dock,
-    margin: (i32, i32, i32, i32), // top, right, bottom, left
     lmouse_down: bool,
     rmouse_down: bool,
     rmouse_start: Option<Point>,
@@ -50,22 +46,20 @@ pub struct MainApp {
     current_view: View, // enum
     pub views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
     gesture_handler: GestureHandler,
+    window_handler: WindowHandler,
 }
 
 
 #[to_layer_message]
 #[derive(Debug, Clone)]
-pub enum MainMessage {
+pub enum Message {
     Debug(String),
-    String(String),
     IcedEvent(Event),
-    Index(usize),
-    Dock(Dock),
+    ViewMessage(usize),
+    WindowMessage(window::Message),
     ChangeView(View),
-    KeyEnter,
-    KeyExit,
-    KeyPress,
-    KeyRelease,
+    ActionGesture(ActionDirection),
+    Gesture(gesture::Message),
 }
 
 
@@ -84,8 +78,9 @@ impl MainApp {
     }
 
 
-
-    fn move_window(&mut self, position: Point) -> Task<MainMessage> {
+    // todo move this into window helper, and make it work like the gesture
+    // start, end, append, update
+    fn move_window(&mut self, position: Point) -> Task<Message> {
         // get windows initial position - the margin
         if self.rmouse_start.is_none() {
             self.rmouse_start = Some(position);
@@ -98,8 +93,8 @@ impl MainApp {
         info!("diff: {:?} {:?}", -diff.x as i32, diff.y as i32);
 
         // calculate for the margin change
-        let y = diff.y as i32 + self.margin.2;
-        let x = -diff.x as i32 + self.margin.3;
+        let y = diff.y as i32 + self.window_handler.margin.2;
+        let x = -diff.x as i32 + self.window_handler.margin.3;
 
         //info!("mar: {:?} {:?}", x as i32, y as i32);
 
@@ -107,16 +102,16 @@ impl MainApp {
         self.rmouse_start = Some(position);
         
         // apply margin to move window
-        self.margin.2 = y;
-        self.margin.3 = x;
+        self.window_handler.margin.2 = y;
+        self.window_handler.margin.3 = x;
         info!("mar: {:?} {:?}", x as i32, y as i32);
-        return Task::done(MainMessage::MarginChange((0, 0, y, x)))
+        return Task::done(Message::MarginChange((0, 0, y, x)))
 
         //Task::none()
     }
 
 
-    fn handle_input_event(&mut self, event: &Event) -> Task<MainMessage> {
+    fn handle_input_event(&mut self, event: &Event) -> Task<Message> {
         match event {
             //Event::Window(event) => todo!(),
 
@@ -154,8 +149,8 @@ impl MainApp {
                     mouse::Event::ButtonReleased(button) => {
                         match button {
                             mouse::Button::Left => {
-                                self.gesture_handler.end();
                                 self.lmouse_down = false;
+                                self.gesture_handler.end();
                             }
                             mouse::Button::Right => {
                                 self.rmouse_down = false;
@@ -221,14 +216,14 @@ impl MainApp {
 
     // handle layer shell settings
     pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
-        let default = MainApp::default();
+        let window_handler = WindowHandler::new();
         // default free window mode
         LayerShellSettings {
             anchor: Anchor::Bottom | Anchor::Left, //| Anchor::Right,
             layer: Layer::Top, // Layer::Overlay if need to go the max
             exclusive_zone: -1,
-            size: Some(default.size), //None,
-            margin: default.margin,
+            size: Some(window_handler.size), //None,
+            margin: window_handler.margin,
             keyboard_interactivity: KeyboardInteractivity::OnDemand,
             events_transparent: false,
             start_mode: StartMode::default(),
@@ -243,10 +238,6 @@ impl Default for MainApp {
     fn default() -> Self {
         Self {
             self_ref: None,
-            windowed: true,
-            size: (600, 250),
-            dock: Dock::Top,
-            margin: (0, 0, 0, 0),
             lmouse_down: false,
             rmouse_down: false,
             rmouse_start: None,
@@ -254,13 +245,14 @@ impl Default for MainApp {
             current_view: View::CompactQWERTY,
             views: View::init_views(),
             gesture_handler: GestureHandler::new(),
+            window_handler: WindowHandler::new(),
         }
     }
 }
 
 
 impl MainApp {
-    pub fn new() -> (Self, Task<MainMessage>) {
+    pub fn new() -> (Self, Task<Message>) {
         let default = Self::default();
         // create a weakreference to the main window
         let main = Rc::new(RefCell::new(default));
@@ -269,8 +261,9 @@ impl MainApp {
     }
 
 
-    pub fn view(&self) -> Element<MainMessage> {
+    pub fn view(&self) -> Element<Message> {
         //info!("view draw");
+        // todo move the has gesture into the guesture helper
         let has_gesture = self.current_view().has_gesture();
         match has_gesture {
             true => {
@@ -287,55 +280,30 @@ impl MainApp {
     }
 
 
-    pub fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
+    pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            MainMessage::Debug(s) => {
-                info!("{s}");
+            Message::ViewMessage(_) => self.current_view_mut().update(message),
+            Message::Gesture(msg) => {
+                let _ = self.gesture_handler.update(msg);
+                Task::none()
             }
-            MainMessage::ChangeView(view) => {
+            Message::ActionGesture(direction) => {
+                info!("Gesture: {direction:?}");
+                Task::none()
+            }
+            Message::Debug(s) => {
+                info!("{s}");
+                Task::none()
+            }
+            Message::ChangeView(view) => {
                 info!("Change view to {view:?}");
                 self.current_view = view;
+                Task::none()
             }
-            MainMessage::String(s) => {
-                info!("{s}");
-            }
-            MainMessage::IcedEvent(event) => {
-                return self.handle_input_event(&event);
-            }
-            MainMessage::Dock(dock) => {
-                self.dock = dock;
-                match dock {
-                    Dock::Left => {
-                        return Task::done(MainMessage::AnchorSizeChange(
-                        Anchor::Left | Anchor::Top | Anchor::Bottom,
-                        (400, 0),
-                        ))
-                    }
-                    Dock::Right => {
-                        return Task::done(MainMessage::AnchorSizeChange(
-                        Anchor::Right | Anchor::Top | Anchor::Bottom,
-                        (400, 0),
-                        ))
-                    }
-                    Dock::Bottom => {
-                        return Task::done(MainMessage::AnchorSizeChange(
-                        Anchor::Bottom | Anchor::Left | Anchor::Right,
-                        (0, 400),
-                        ))
-                    }
-                    Dock::Top => {
-                        return Task::done(MainMessage::AnchorSizeChange(
-                        Anchor::Top | Anchor::Left | Anchor::Right,
-                        (0, 400),
-                        ))
-                    }
-                }
-            }
-            _ => {
-                return self.current_view_mut().update(message);
-            }
+            Message::IcedEvent(event) => self.handle_input_event(&event),
+            Message::WindowMessage(msg) => self.window_handler.update(msg),
+            _ => {Task::none()}
         }
-        Task::none()
     }
 
 
@@ -351,8 +319,10 @@ impl MainApp {
         String::from("surfboard")
     }
 
-    pub fn subscription(&self) -> Subscription<MainMessage> {
-        event::listen().map(MainMessage::IcedEvent)
+    pub fn subscription(&self) -> Subscription<Message> {
+        let main_subscription = event::listen().map(Message::IcedEvent);
+        let gesture_subscription = self.gesture_handler.subscription().map(Message::Gesture);
+        Subscription::batch(vec![main_subscription, gesture_subscription])
         //event::listen_with(self.handle_input_event) // can try splitting this out?
     }
 

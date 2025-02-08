@@ -34,7 +34,7 @@ impl App {
         }
     }
 
-    fn icon(&self) -> Element<MainMessage> {
+    fn icon(&self) -> Element<Message> {
         match &self.icon {
             Some(path) => {
                 if path
@@ -60,9 +60,9 @@ impl App {
         }
     }
 
-    pub fn view(&self, index: usize) -> Element<MainMessage> {
+    pub fn view(&self, index: usize) -> Element<Message> {
         Key::new(self.icon())
-            .on_press(MainMessage::Index(index))
+            .on_press(Message::ViewMessage(index))
             .into()
     }
 }
