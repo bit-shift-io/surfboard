@@ -2,6 +2,7 @@ use iced::{
     Element,
     Task
 };
+use std::fmt;
 use super::*;
 use crate::views::*;
 
@@ -44,6 +45,7 @@ impl std::fmt::Display for View {
     }
 }
 
+
 pub trait ViewTrait {
     fn new() -> Self where Self: Sized;
     fn view(&self) -> Element<main_app::Message>;
@@ -64,8 +66,15 @@ pub trait ViewTrait {
     }
 }
 
+impl fmt::Debug for dyn ViewTrait + 'static {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ViewTrait").finish()
+    }
+}
+
 
 // todo view handler which stores history of view, and manages the action gestures, view switching, and panes
+#[derive(Debug)]
 pub struct ViewHandler {
     pub current_view: View, // enum
     pub views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects

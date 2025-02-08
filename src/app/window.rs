@@ -1,10 +1,9 @@
 use iced::Task;
-use iced_layershell::{reexport::Anchor, to_layer_message};
-
+use iced_layershell::reexport::Anchor;
 use super::*;
 
 
-
+#[derive(Debug)]
 pub struct WindowHandler {
     pub dock: Dock,
     pub windowed: bool,
@@ -59,7 +58,7 @@ impl WindowHandler {
                     }
                 }
             }
-            _ => {Task::none()}
+            _ => Task::none()
         }
     }
 

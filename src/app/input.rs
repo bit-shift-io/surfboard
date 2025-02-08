@@ -11,10 +11,12 @@ use iced::{
     Task, 
 };
 use iced_runtime::Action;
-
 use super::*;
 
+
+#[derive(Debug)]
 pub struct InputHandler {
+    //pub context: Option<Weak<RefCell<MainApp>>>,
     pub lmouse_down: bool,
     pub rmouse_down: bool,
     pub rmouse_start: Option<Point>,
@@ -24,6 +26,7 @@ pub struct InputHandler {
 impl InputHandler {
     pub fn new() -> Self {
         InputHandler {
+            //context: None,
             lmouse_down: false,
             rmouse_down: false,
             rmouse_start: None,
@@ -49,17 +52,22 @@ impl InputHandler {
                         match button {
                             mouse::Button::Left => {
                                 self.lmouse_down = true;
+                                // // access the weak reference/context
+                                // info!("context {:?}", self.context);
+                                // if let Some(context) = self.context.as_ref().and_then(|weak| weak.upgrade()) {
+                                //     let mut main_app = context.borrow_mut();
+                                //     println!("Upgraded context and calling gesture_handler.start()");
+                                //     return main_app.gesture_handler.start();
+                                // }
+                                // println!("upgrade failed");
+                                // Task::none()
                                 Task::done(main_app::Message::GestureHandler(gesture::Message::Start))
                             }
-                            // Task::perform(
-                            //     async { self.lmouse_down = true }, 
-                            //     |_| main_app::Message::GestureHandler(gesture::Message::Start
-                            // )),
-                            // mouse::Button::Right => {
-                            //     self.rmouse_start = None;
-                            //     self.rmouse_down = true;
-                            //     Task::none()
-                            // }
+                            mouse::Button::Right => {
+                                self.rmouse_start = None;
+                                self.rmouse_down = true;
+                                Task::none()
+                            }
                             _ => Task::none()
                         }
                     }
@@ -67,17 +75,26 @@ impl InputHandler {
                         match button {
                             mouse::Button::Left => {
                                 self.lmouse_down = false;
+                                // if let Some(context) = self.context.as_ref().and_then(|weak| weak.upgrade()) {
+                                //     let mut main_app = context.borrow_mut();
+                                //     return main_app.gesture_handler.end();
+                                // }
+                                //Task::none()
                                 Task::done(main_app::Message::GestureHandler(gesture::Message::End))
                             }
-                            // mouse::Button::Right => {
-                            //     self.rmouse_down = false;
-                            //     Task::none()
-                            // }
+                            mouse::Button::Right => {
+                                self.rmouse_down = false;
+                                Task::none()
+                            }
                             _ => Task::none()
                         }
                     }
                     mouse::Event::CursorMoved { position } => {
                         if self.lmouse_down {
+                            // if let Some(context) = self.context.as_ref().and_then(|weak| weak.upgrade()) {
+                            //     let mut main_app = context.borrow_mut();
+                            //     return main_app.gesture_handler.append(*position);
+                            // }
                             return Task::done(main_app::Message::GestureHandler(gesture::Message::Move(*position)))
                         }
                         // if self.rmouse_down {

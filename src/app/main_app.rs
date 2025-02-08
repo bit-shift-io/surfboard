@@ -15,20 +15,15 @@ use iced_layershell::{
     }, 
     to_layer_message,
 };
-use std::rc::{
-    Rc, 
-    Weak
-};
-use std::cell::RefCell;
 use crate::*;
 
 
+#[derive(Debug)]
 pub struct MainApp {
-    self_ref: Option<Weak<RefCell<MainApp>>>,
-    gesture_handler: GestureHandler,
-    window_handler: WindowHandler,
-    input_handler: InputHandler,
-    view_handler: ViewHandler,
+    pub gesture_handler: GestureHandler,
+    pub window_handler: WindowHandler,
+    pub input_handler: InputHandler,
+    pub view_handler: ViewHandler,
 }
 
 
@@ -47,7 +42,6 @@ pub enum Message {
 impl Default for MainApp {
     fn default() -> Self {
         Self {
-            self_ref: None,
             gesture_handler: GestureHandler::new(),
             window_handler: WindowHandler::new(),
             input_handler: InputHandler::new(),
@@ -75,10 +69,7 @@ impl MainApp {
 
     pub fn new() -> (Self, Task<Message>) {
         let default = Self::default();
-        // create a weakreference to the main window
-        let main = Rc::new(RefCell::new(default));
-        main.borrow_mut().initialize_self_ref(&main);
-        (Rc::try_unwrap(main).map_err(|_| panic!("Failed to unwrap Rc")).unwrap().into_inner(), Task::none())
+        (default, Task::none())
     }
 
     pub fn view(&self) -> Element<Message> {
@@ -123,10 +114,5 @@ impl MainApp {
         let main_subscription = event::listen().map(Message::IcedEvent);
         let gesture_subscription = self.gesture_handler.subscription().map(Message::GestureHandler);
         Subscription::batch(vec![main_subscription, gesture_subscription])
-    }
-
-    fn initialize_self_ref(&mut self, self_rc: &Rc<RefCell<Self>>) {
-        let weak_self = Rc::downgrade(self_rc);
-        self.self_ref = Some(weak_self);
     }
 }
