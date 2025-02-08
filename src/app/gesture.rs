@@ -204,7 +204,7 @@ impl GestureHandler {
             _ => ActionDirection::TopLeft,
         };
 
-        Task::perform(async { main_app::Message::ActionGesture(direction) }, |result | result)
+        Task::perform(async { main_app::Message::ViewHandler(view::Message::ActionGesture(direction)) }, |result | result)
     }
 
     fn handle_view_gesture(&mut self, gesture: Gesture) -> Task<main_app::Message> {

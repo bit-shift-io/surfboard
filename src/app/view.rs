@@ -59,61 +59,62 @@ pub trait ViewTrait {
         false
     }
 
-    fn update(&mut self, _message: Message) -> Task<Message> {
+    fn update(&mut self, _message: Message) -> Task<main_app::Message> {
         Task::none()
     }
 }
 
 
+// todo view handler which stores history of view, and manages the action gestures, view switching, and panes
+pub struct ViewHandler {
+    pub current_view: View, // enum
+    pub views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
+}
 
+#[derive(Debug, Clone)]
+pub enum Message {
+    ChangeView(View),
+    ActionGesture(ActionDirection),
+    ViewMessage(usize),
+}
 
-// pub struct View<T> {
-//     pub parent: Option<Weak<RefCell<MainWindow>>>,
-//     inner: T,
-// }
+impl ViewHandler {
+    pub fn new() -> Self {
+        ViewHandler {
+            current_view: View::CompactQWERTY,
+            views: View::init_views(),
+        }
+    }
 
+    pub fn update(&mut self, message: Message) -> Task<main_app::Message> {
+        match message {
+            Message::ChangeView(view) => {
+                info!("Change view to {view:?}");
+                self.current_view = view;
+                Task::none()
+            }
+            Message::ActionGesture(direction) => {
+                match direction {
+                    ActionDirection::TopLeft => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
+                    ActionDirection::Top => Task::done(Message::ChangeView(View::Configuration)).map(main_app::Message::ViewHandler),
+                    ActionDirection::TopRight => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
+                    ActionDirection::Right => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
+                    ActionDirection::BottomRight => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
+                    ActionDirection::Bottom => Task::done(Message::ChangeView(View::Launcher)).map(main_app::Message::ViewHandler),
+                    ActionDirection::BottomLeft => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
+                    ActionDirection::Left => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
+                }
+            }
+            //Message::ViewMessage() => self.current_view_mut().update(message),
+            _ => Task::none()
+        }
+    }
 
+    pub fn current_view(&self) -> &Box<dyn ViewTrait> {
+        self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
+    }
 
-// impl<T: ViewTrait> ViewTrait for View<T> {
-//     fn new() -> Self {
-//         Self {
-//             parent: None,
-//             inner: T::new(),
-//         }
-//     }
-
-//     fn view(&self) -> Element<MainMessage> {
-//         self.inner.view()
-//     }
-
-//     fn update(&mut self, message: MainMessage) -> Task<MainMessage> {
-//         self.inner.update(message)
-//     }
-
-//     fn name(&self) -> &str {
-//         self.inner.name()
-//     }
-
-//     fn has_gesture(&self) -> bool {
-//         self.inner.has_gesture()
-//     }
-
-//     fn set_parent(&mut self, parent: Option<Weak<RefCell<MainWindow>>>) {
-//         self.parent = parent;
-//     }
-
-//     fn get_parent(&self) -> Option<Rc<RefCell<MainWindow>>> {
-//         self.parent.as_ref().and_then(|parent| parent.upgrade())
-//     }
-// }
-
-// impl<T: ViewTrait> View<T> {
-//     pub fn new(inner: T) -> Self {
-//         Self {
-//             parent: None,
-//             inner,
-//         }
-//     }
-// }
-
-
+    pub fn current_view_mut(&mut self) -> &mut Box<dyn ViewTrait> {
+        self.views.iter_mut().find(|view| view.class() == self.current_view).expect("No matching view found")
+    }
+}

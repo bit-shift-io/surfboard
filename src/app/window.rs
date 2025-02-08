@@ -64,6 +64,37 @@ impl WindowHandler {
     }
 
 
+    // // todo move this into window helper, and make it work like the gesture
+    // // start, end, append, update
+    // fn move_window(&mut self, position: Point) -> Task<main_app::Message> {
+    //     // get windows initial position - the margin
+    //     if self.input_handler.rmouse_start.is_none() {
+    //         self.input_handler.rmouse_start = Some(position);
+    //         info!("start: {:?}", self.input_handler.rmouse_start.unwrap());
+    //         return Task::none();
+    //     }
+
+    //     // calulate the difference
+    //     let diff = self.input_handler.rmouse_start.unwrap() - position;
+    //     info!("diff: {:?} {:?}", -diff.x as i32, diff.y as i32);
+
+    //     // calculate for the margin change
+    //     let y = diff.y as i32 + self.window_handler.margin.2;
+    //     let x = -diff.x as i32 + self.window_handler.margin.3;
+
+    //     //info!("mar: {:?} {:?}", x as i32, y as i32);
+
+    //     // store the mouse pos
+    //     self.input_handler.rmouse_start = Some(position);
+        
+    //     // apply margin to move window
+    //     self.window_handler.margin.2 = y;
+    //     self.window_handler.margin.3 = x;
+    //     info!("mar: {:?} {:?}", x as i32, y as i32);
+    //     return Task::done(Message::MarginChange((0, 0, y, x)))
+
+    //     //Task::none()
+    // }
 
 
 }

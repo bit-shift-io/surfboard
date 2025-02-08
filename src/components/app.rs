@@ -60,9 +60,9 @@ impl App {
         }
     }
 
-    pub fn view(&self, index: usize) -> Element<Message> {
+    pub fn view(&self, index: usize) -> Element<main_app::Message> {
         Key::new(self.icon())
-            .on_press(Message::ViewMessage(index))
+            //.on_press(main_app::Message::Debug("btn")) // main_app::Message::ViewHandler(view::Message::ViewMessage(index))
             .into()
     }
 }
