@@ -12,7 +12,7 @@ pub struct WindowHandler {
     pub margin: (i32, i32, i32, i32), // top, right, bottom, left
 }
 
-#[to_layer_message] // used for extra iced messages
+
 #[derive(Debug, Clone)]
 pub enum Message {
     Dock(Dock),

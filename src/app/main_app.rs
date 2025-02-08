@@ -1,12 +1,5 @@
 use iced::{
     event, 
-    keyboard::{
-        self, 
-        key::Named
-    }, 
-    mouse, 
-    time::Instant, 
-    touch, 
     widget::stack, 
     Color, 
     Element, 
@@ -23,43 +16,37 @@ use iced_layershell::{
     }, 
     to_layer_message,
 };
-use iced_runtime::Action;
 use std::rc::{
     Rc, 
     Weak
 };
 use std::cell::RefCell;
 use std::fmt::Debug;
-use crate::{
-    components::*, 
-    *,
-};
+use crate::*;
 
 
 
 pub struct MainApp {
     self_ref: Option<Weak<RefCell<MainApp>>>, // weak ref
-    lmouse_down: bool,
-    rmouse_down: bool,
-    rmouse_start: Option<Point>,
-    finger_presses: Vec<(u64, Point, Instant)>,
     current_view: View, // enum
     pub views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
     gesture_handler: GestureHandler,
     window_handler: WindowHandler,
+    input_handler: InputHandler,
 }
 
 
-#[to_layer_message]
+#[to_layer_message] // used for extra iced messages
 #[derive(Debug, Clone)]
 pub enum Message {
     Debug(String),
     IcedEvent(Event),
     ViewMessage(usize),
-    WindowMessage(window::Message),
+    WindowHandler(window::Message),
     ChangeView(View),
     ActionGesture(ActionDirection),
-    Gesture(gesture::Message),
+    GestureHandler(gesture::Message),
+    None,
 }
 
 
@@ -80,16 +67,16 @@ impl MainApp {
 
     // todo move this into window helper, and make it work like the gesture
     // start, end, append, update
-    fn move_window(&mut self, position: Point) -> Task<Message> {
+    fn move_window(&mut self, position: Point) -> Task<main_app::Message> {
         // get windows initial position - the margin
-        if self.rmouse_start.is_none() {
-            self.rmouse_start = Some(position);
-            info!("start: {:?}", self.rmouse_start.unwrap());
+        if self.input_handler.rmouse_start.is_none() {
+            self.input_handler.rmouse_start = Some(position);
+            info!("start: {:?}", self.input_handler.rmouse_start.unwrap());
             return Task::none();
         }
 
         // calulate the difference
-        let diff = self.rmouse_start.unwrap() - position;
+        let diff = self.input_handler.rmouse_start.unwrap() - position;
         info!("diff: {:?} {:?}", -diff.x as i32, diff.y as i32);
 
         // calculate for the margin change
@@ -99,7 +86,7 @@ impl MainApp {
         //info!("mar: {:?} {:?}", x as i32, y as i32);
 
         // store the mouse pos
-        self.rmouse_start = Some(position);
+        self.input_handler.rmouse_start = Some(position);
         
         // apply margin to move window
         self.window_handler.margin.2 = y;
@@ -111,110 +98,6 @@ impl MainApp {
     }
 
 
-    fn handle_input_event(&mut self, event: &Event) -> Task<Message> {
-        match event {
-            //Event::Window(event) => todo!(),
-
-            // keyboard
-            Event::Keyboard(keyboard::Event::KeyPressed {
-                key,
-                ..
-            }) => match key {
-                iced::keyboard::Key::Named(Named::Escape) => {
-                    return iced_runtime::task::effect(Action::Exit)
-                }
-                iced::keyboard::Key::Named(Named::Backspace) => {
-                    // pop stack history
-                }
-                _ => {}
-            }
-
-            // mouse
-            Event::Mouse(event) => {
-                match event {
-                    mouse::Event::ButtonPressed(button) => {
-                        match button {
-                            mouse::Button::Left => {
-                                self.gesture_handler.start();
-                                //self.gesture_handler.clear();
-                                self.lmouse_down = true;
-                            }
-                            mouse::Button::Right => {
-                                self.rmouse_start = None;
-                                self.rmouse_down = true;
-                            }
-                            _ => {info!("Unhandled mouse button")}
-                        }
-                    }
-                    mouse::Event::ButtonReleased(button) => {
-                        match button {
-                            mouse::Button::Left => {
-                                self.lmouse_down = false;
-                                self.gesture_handler.end();
-                            }
-                            mouse::Button::Right => {
-                                self.rmouse_down = false;
-                            }
-                            _ => {info!("Unhandled mouse release")}
-                        }
-                    }
-                    mouse::Event::CursorMoved { position } => {
-                        if self.lmouse_down {
-                            self.gesture_handler.append(*position);
-                        }
-                        if self.rmouse_down {
-                            if self.rmouse_down {
-                                return self.move_window(*position);
-                            }
-                        }
-                    }
-                    _ => {info!("Unhandled event")}
-                    
-                }
-            }
-
-            // touch
-            Event::Touch(event) => {
-                match event {
-                    touch::Event::FingerPressed { id, position} => {
-                        self.finger_presses.push((id.0, *position, Instant::now()));
-                    }
-                    touch::Event::FingerMoved { id, position} => {
-                        if let Some((_, _, _)) = self.finger_presses.iter_mut().find(|(fid, _, _)| *fid == id.0) {
-                            if id.0 == 1 {
-                                info!("Finger 1 moved to: {position}");
-                            }
-                        }
-                    }
-                    touch::Event::FingerLifted { id, ..} | touch::Event::FingerLost { id, ..} => {
-                        self.finger_presses.retain(|(fid, _, _)| *fid != id.0);
-                        //todo
-                    }
-                    _ => {}
-                }
-
-                // Check for multiple finger presses
-                if self.finger_presses.len() >= 2 {
-                    // Get the timestamps of the two most recent finger presses
-                    let (t1, t2) = {
-                        let mut timestamps = self.finger_presses.iter().map(|(_, _, t)| t).collect::<Vec<_>>();
-                        timestamps.sort();
-                        (timestamps[0], timestamps[1])
-                    };
-
-                    // Check if the delay between the two finger presses is within a certain threshold
-                    if t2.duration_since(*t1).as_millis() < 200 { // 200ms threshold
-                        // Handle the multiple finger press event
-                        info!("Multiple finger press detected!");
-                    }
-                }
-            },
-            _ => {}, // info!("event: {event:?}");
-        }
-        Task::none()
-    }
-
-    // handle layer shell settings
     pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
         let window_handler = WindowHandler::new();
         // default free window mode
@@ -234,18 +117,14 @@ impl MainApp {
 
 
 impl Default for MainApp {
-    /// Creates a default instance of [`MainWindow`].
     fn default() -> Self {
         Self {
             self_ref: None,
-            lmouse_down: false,
-            rmouse_down: false,
-            rmouse_start: None,
-            finger_presses: Vec::new(),
             current_view: View::CompactQWERTY,
             views: View::init_views(),
             gesture_handler: GestureHandler::new(),
             window_handler: WindowHandler::new(),
+            input_handler: InputHandler::new(),
         }
     }
 }
@@ -264,29 +143,21 @@ impl MainApp {
     pub fn view(&self) -> Element<Message> {
         //info!("view draw");
         // todo move the has gesture into the guesture helper
-        let has_gesture = self.current_view().has_gesture();
-        match has_gesture {
-            true => {
-                return stack![
-                    self.current_view().view(),
-                    self.gesture_handler.view(),
-                ]
-                .into()
-            }
-            false => {
-                return self.current_view().view()
-            }
-        }
+        //let has_gesture = self.current_view().has_gesture();
+        stack![
+            self.current_view().view(),
+            self.gesture_handler.view(),
+        ]
+        .into()
     }
 
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::IcedEvent(event) => self.input_handler.update(&event),
+            Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::ViewMessage(_) => self.current_view_mut().update(message),
-            Message::Gesture(msg) => {
-                let _ = self.gesture_handler.update(msg);
-                Task::none()
-            }
+            Message::GestureHandler(msg) => self.gesture_handler.update(msg),
             Message::ActionGesture(direction) => {
                 info!("Gesture: {direction:?}");
                 Task::none()
@@ -300,9 +171,8 @@ impl MainApp {
                 self.current_view = view;
                 Task::none()
             }
-            Message::IcedEvent(event) => self.handle_input_event(&event),
-            Message::WindowMessage(msg) => self.window_handler.update(msg),
-            _ => {Task::none()}
+
+            _ => Task::none()
         }
     }
 
@@ -321,9 +191,7 @@ impl MainApp {
 
     pub fn subscription(&self) -> Subscription<Message> {
         let main_subscription = event::listen().map(Message::IcedEvent);
-        let gesture_subscription = self.gesture_handler.subscription().map(Message::Gesture);
+        let gesture_subscription = self.gesture_handler.subscription().map(Message::GestureHandler);
         Subscription::batch(vec![main_subscription, gesture_subscription])
-        //event::listen_with(self.handle_input_event) // can try splitting this out?
     }
-
 }

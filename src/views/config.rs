@@ -36,7 +36,7 @@ impl ViewTrait for ConfigurationView {
         let pick_dock: PickList<'_, Dock, &[Dock], Dock, main_app::Message, Theme, Renderer> = pick_list(
             &Dock::ALL[..],
             None,
-            |dock| main_app::Message::WindowMessage(window::Message::Dock(dock)),
+            |dock| main_app::Message::WindowHandler(window::Message::Dock(dock)),
         )
         .placeholder("Edge");
 
