@@ -1,10 +1,10 @@
 use std::str::FromStr;
 use std::path::PathBuf;
 use pretty_ini::{ini, ini_file};
-use iced::widget::{image, svg};
-use iced::{Element, Length};
+use iced::widget::{button, image, svg, Button};
+use iced::{Element, Length, Task};
 use crate::components::*;
-
+use crate::app::*;
 use crate::*;
 
 static DEFAULT_ICON: &[u8] = include_bytes!("../../res/ghost-solid.svg");
@@ -61,9 +61,12 @@ impl App {
     }
 
     pub fn view(&self, index: usize) -> Element<main_app::Message> {
+        // convert to main_app::Message in a convoluted way
+        <Key<'_, view::Message> as Into<Element<view::Message>>>::into(
         Key::new(self.icon())
-            //.on_press(main_app::Message::Debug("btn")) // main_app::Message::ViewHandler(view::Message::ViewMessage(index))
-            .into()
+                .on_press(view::Message::ViewMessage(index))
+        )
+        .map(main_app::Message::ViewHandler)
     }
 }
 

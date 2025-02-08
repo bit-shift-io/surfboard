@@ -89,7 +89,6 @@ impl ViewHandler {
     pub fn update(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
             Message::ChangeView(view) => {
-                info!("Change view to {view:?}");
                 self.current_view = view;
                 Task::none()
             }
@@ -105,7 +104,7 @@ impl ViewHandler {
                     ActionDirection::Left => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
                 }
             }
-            //Message::ViewMessage() => self.current_view_mut().update(message),
+            Message::ViewMessage(_) => self.current_view_mut().update(message),
             _ => Task::none()
         }
     }
