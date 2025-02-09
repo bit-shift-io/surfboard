@@ -14,7 +14,7 @@ use iced_runtime::Action;
 use super::*;
 
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct InputHandler {
     //pub context: Option<Weak<RefCell<MainApp>>>,
     pub lmouse_down: bool,

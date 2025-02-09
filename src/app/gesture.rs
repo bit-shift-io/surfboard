@@ -46,7 +46,7 @@ pub enum Message {
     Move(Point),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GestureHandler {
     pub history: Vec<Gesture>,
     pub current_gesture: Option<Gesture>,

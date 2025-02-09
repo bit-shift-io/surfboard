@@ -6,45 +6,30 @@ use std::fmt;
 use super::*;
 use crate::views::*;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum View {
-    CompactQWERTY,
+    CompactQwerty,
     Configuration,
     Launcher,
-    // Add more views/layouts here
+}
+
+impl std::fmt::Display for View {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            View::CompactQwerty => write!(f, "Compact QWERTY"),
+            View::Configuration => write!(f, "Configuration"),
+            View::Launcher => write!(f, "Launcher"),
+        }
+    }
 }
 
 impl View {
     pub const ALL: [View; 3] = [
-        View::CompactQWERTY,
+        View::CompactQwerty,
         View::Configuration,
         View::Launcher,
-        // Add more views/layouts here
     ];
-
-    pub fn init_views() -> Vec<Box<dyn ViewTrait>> {
-        vec![
-            Box::new(CompactQwertyView::new()),
-            Box::new(ConfigurationView::new()),
-            Box::new(LauncherView::new()),
-            // Add more views/layouts here
-        ]
-    }
 }
-
-impl std::fmt::Display for View {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}",
-            match self {
-                View::CompactQWERTY => "Compact QWERTY",
-                View::Configuration => "Configuration",
-                View::Launcher => "Launcher",
-                // Add more views/layouts here
-            }
-        )
-    }
-}
-
 
 pub trait ViewTrait {
     fn new() -> Self where Self: Sized;
@@ -74,10 +59,12 @@ impl fmt::Debug for dyn ViewTrait + 'static {
 
 
 // todo view handler which stores history of view, and manages the action gestures, view switching, and panes
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ViewHandler {
     pub current_view: View, // enum
-    pub views: Vec<Box<dyn ViewTrait>>, // list of ViewTrait objects
+    pub compact_qwerty_view: CompactQwertyView,
+    pub configuration_view: ConfigurationView,
+    pub launcher_view: LauncherView,
 }
 
 #[derive(Debug, Clone)]
@@ -90,8 +77,10 @@ pub enum Message {
 impl ViewHandler {
     pub fn new() -> Self {
         ViewHandler {
-            current_view: View::CompactQWERTY,
-            views: View::init_views(),
+            current_view: View::CompactQwerty,
+            compact_qwerty_view: CompactQwertyView::new(),
+            configuration_view: ConfigurationView::new(),
+            launcher_view: LauncherView::new(),
         }
     }
 
@@ -102,27 +91,40 @@ impl ViewHandler {
                 Task::none()
             }
             Message::ActionGesture(direction) => {
-                match direction {
-                    ActionDirection::TopLeft => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
-                    ActionDirection::Top => Task::done(Message::ChangeView(View::Configuration)).map(main_app::Message::ViewHandler),
-                    ActionDirection::TopRight => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
-                    ActionDirection::Right => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
-                    ActionDirection::BottomRight => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
-                    ActionDirection::Bottom => Task::done(Message::ChangeView(View::Launcher)).map(main_app::Message::ViewHandler),
-                    ActionDirection::BottomLeft => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
-                    ActionDirection::Left => Task::done(Message::ChangeView(View::CompactQWERTY)).map(main_app::Message::ViewHandler),
-                }
+                let view_class = match direction {
+                    ActionDirection::TopLeft => View::CompactQwerty,
+                    ActionDirection::Top => View::Configuration,
+                    ActionDirection::TopRight => View::CompactQwerty,
+                    ActionDirection::Right => View::CompactQwerty,
+                    ActionDirection::BottomRight => View::CompactQwerty,
+                    ActionDirection::Bottom => View::Launcher,
+                    ActionDirection::BottomLeft => View::CompactQwerty,
+                    ActionDirection::Left => View::CompactQwerty,
+                };
+                Task::done(Message::ChangeView(view_class)).map(main_app::Message::ViewHandler)
             }
             Message::ViewMessage(_) => self.current_view_mut().update(message),
             _ => Task::none()
         }
     }
 
-    pub fn current_view(&self) -> &Box<dyn ViewTrait> {
-        self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
+    pub fn view(&self) -> Element<main_app::Message> {
+        self.current_view().view()
     }
 
-    pub fn current_view_mut(&mut self) -> &mut Box<dyn ViewTrait> {
-        self.views.iter_mut().find(|view| view.class() == self.current_view).expect("No matching view found")
+    pub fn current_view(&self) -> &dyn ViewTrait {
+        match self.current_view {
+            View::CompactQwerty => &self.compact_qwerty_view,
+            View::Configuration => &self.configuration_view,
+            View::Launcher => &self.launcher_view,
+        }
+    }
+
+    pub fn current_view_mut(&mut self) -> &mut dyn ViewTrait {
+        match self.current_view {
+            View::CompactQwerty => &mut self.compact_qwerty_view,
+            View::Configuration => &mut self.configuration_view,
+            View::Launcher => &mut self.launcher_view,
+        }
     }
 }

@@ -75,7 +75,7 @@ impl ViewTrait for CompactQwertyView {
     }
     
     fn class(&self) -> View {
-        View::CompactQWERTY
+        View::CompactQwerty
     }
     
     fn has_gesture(&self) -> bool {

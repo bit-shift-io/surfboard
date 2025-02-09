@@ -1,3 +1,6 @@
 pub mod functions;
-//pub mod globals;
+pub mod bus;
 //pub mod signals;
+
+// re-export
+pub use super::utils::bus::*;

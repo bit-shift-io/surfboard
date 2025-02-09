@@ -3,7 +3,7 @@ use iced_layershell::reexport::Anchor;
 use super::*;
 
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct WindowHandler {
     pub dock: Dock,
     pub windowed: bool,

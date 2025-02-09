@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use iced::{
     event, 
     widget::stack, 
@@ -17,8 +19,11 @@ use iced_layershell::{
 };
 use crate::*;
 
+static mut MAIN_APP_PTR: *mut MainApp = std::ptr::null_mut();
 
-#[derive(Debug)]
+
+
+#[derive(Clone, Debug)]
 pub struct MainApp {
     pub gesture_handler: GestureHandler,
     pub window_handler: WindowHandler,
@@ -69,15 +74,16 @@ impl MainApp {
 
     pub fn new() -> (Self, Task<Message>) {
         let default = Self::default();
+        // unsafe {
+        //     MAIN_APP_PTR = Box::into_raw(Box::new(default));
+        // }
+        // let main_app = unsafe { MAIN_APP_PTR.as_mut().unwrap() };
         (default, Task::none())
     }
 
     pub fn view(&self) -> Element<Message> {
-        //info!("view draw");
-        // todo move the has gesture into the guesture helper
-        //let has_gesture = self.current_view().has_gesture();
         stack![
-            self.view_handler.current_view().view(),
+            self.view_handler.view(),
             self.gesture_handler.view(),
         ]
         .into()
