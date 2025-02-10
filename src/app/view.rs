@@ -9,7 +9,7 @@ use crate::views::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum View {
     CompactQwerty,
-    Configuration,
+    Settings,
     Launcher,
 }
 
@@ -17,7 +17,7 @@ impl std::fmt::Display for View {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             View::CompactQwerty => write!(f, "Compact QWERTY"),
-            View::Configuration => write!(f, "Configuration"),
+            View::Settings => write!(f, "Settings"),
             View::Launcher => write!(f, "Launcher"),
         }
     }
@@ -26,7 +26,7 @@ impl std::fmt::Display for View {
 impl View {
     pub const ALL: [View; 3] = [
         View::CompactQwerty,
-        View::Configuration,
+        View::Settings,
         View::Launcher,
     ];
 }
@@ -34,6 +34,7 @@ impl View {
 pub trait ViewTrait {
     fn new() -> Self where Self: Sized;
     fn view(&self) -> Element<main_app::Message>;
+    fn update(&mut self, _message: Message) -> Task<main_app::Message> {Task::none()}
     
     /// Returns true if this view has a gesture to handle, false otherwise.
     /// When a view has a gesture, a canvas is drawn on top of it to intercept
@@ -45,9 +46,7 @@ pub trait ViewTrait {
         false
     }
 
-    fn update(&mut self, _message: Message) -> Task<main_app::Message> {
-        Task::none()
-    }
+
 }
 
 impl fmt::Debug for dyn ViewTrait + 'static {
@@ -61,9 +60,9 @@ impl fmt::Debug for dyn ViewTrait + 'static {
 #[derive(Clone, Debug)]
 pub struct ViewHandler {
     pub current_view: View, // enum
-    pub compact_qwerty_view: CompactQwertyView,
-    pub configuration_view: ConfigurationView,
-    pub launcher_view: LauncherView,
+    pub compact_qwerty: CompactQwertyView,
+    pub settings: SettingsView,
+    pub launcher: LauncherView,
 }
 
 #[derive(Debug, Clone)]
@@ -77,9 +76,9 @@ impl ViewHandler {
     pub fn new() -> Self {
         ViewHandler {
             current_view: View::CompactQwerty,
-            compact_qwerty_view: CompactQwertyView::new(),
-            configuration_view: ConfigurationView::new(),
-            launcher_view: LauncherView::new(),
+            compact_qwerty: CompactQwertyView::new(),
+            settings: SettingsView::new(),
+            launcher: LauncherView::new(),
         }
     }
 
@@ -92,18 +91,19 @@ impl ViewHandler {
             Message::ActionGesture(direction) => {
                 let view_class = match direction {
                     ActionDirection::TopLeft => View::CompactQwerty,
-                    ActionDirection::Top => View::Configuration,
+                    ActionDirection::Top => View::Settings,
                     ActionDirection::TopRight => View::CompactQwerty,
                     ActionDirection::Right => View::CompactQwerty,
                     ActionDirection::BottomRight => View::CompactQwerty,
                     ActionDirection::Bottom => View::Launcher,
                     ActionDirection::BottomLeft => View::CompactQwerty,
                     ActionDirection::Left => View::CompactQwerty,
+                    ActionDirection::LongPress => View::Settings,
                 };
                 Task::done(Message::ChangeView(view_class)).map(main_app::Message::ViewHandler)
             }
             Message::ViewMessage(_) => self.current_view_mut().update(message),
-            _ => Task::none()
+            //_ => Task::none()
         }
     }
 
@@ -113,17 +113,17 @@ impl ViewHandler {
 
     pub fn current_view(&self) -> &dyn ViewTrait {
         match self.current_view {
-            View::CompactQwerty => &self.compact_qwerty_view,
-            View::Configuration => &self.configuration_view,
-            View::Launcher => &self.launcher_view,
+            View::CompactQwerty => &self.compact_qwerty,
+            View::Settings => &self.settings,
+            View::Launcher => &self.launcher,
         }
     }
 
     pub fn current_view_mut(&mut self) -> &mut dyn ViewTrait {
         match self.current_view {
-            View::CompactQwerty => &mut self.compact_qwerty_view,
-            View::Configuration => &mut self.configuration_view,
-            View::Launcher => &mut self.launcher_view,
+            View::CompactQwerty => &mut self.compact_qwerty,
+            View::Settings => &mut self.settings,
+            View::Launcher => &mut self.launcher,
         }
     }
 }

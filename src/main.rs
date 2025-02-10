@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate log;
 
-use iced::Task;
 use iced_layershell::{
     settings::{
         LayerShellSettings, 

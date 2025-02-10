@@ -22,8 +22,6 @@ pub fn init_env_var() {
     //env::set_var("WGPU_BACKEND", "VULKAN");
 }
 
-
-
 /// Calculate the angle (in radians) from the start point to the end point.
 use iced::Point;
 pub fn calculate_angle(start: Point, end: Point) -> f64 {

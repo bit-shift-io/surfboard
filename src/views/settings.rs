@@ -14,12 +14,12 @@ use crate::app::*;
 
 
 #[derive(Copy, Debug, Clone)]
-pub struct ConfigurationView;
+pub struct SettingsView;
 
 
-impl ViewTrait for ConfigurationView {
+impl ViewTrait for SettingsView {
     fn new() -> Self where Self: Sized {
-        ConfigurationView{}
+        SettingsView{}
     }
 
     fn view(&self) -> Element<main_app::Message> {

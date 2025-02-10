@@ -35,6 +35,7 @@ pub enum Message {
     WindowHandler(window::Message),
     ViewHandler(view::Message),
     GestureHandler(gesture::Message),
+    InputHandler(input::Message),
     None,
 }
 
@@ -56,7 +57,7 @@ impl MainApp {
         let window_handler = WindowHandler::new();
         // default free window mode
         LayerShellSettings {
-            anchor: Anchor::Bottom | Anchor::Left, //| Anchor::Right,
+            anchor: Anchor::Top | Anchor::Left, //| Anchor::Right,
             layer: Layer::Top, // Layer::Overlay if need to go the max
             exclusive_zone: -1,
             size: Some(window_handler.size), //None,
@@ -82,7 +83,8 @@ impl MainApp {
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::IcedEvent(event) => self.input_handler.update(&event, &mut self.gesture_handler, &mut self.window_handler),
+            Message::IcedEvent(event) => self.input_handler.update2(&event, &mut self.gesture_handler, &mut self.window_handler),
+            Message::InputHandler(msg) => self.input_handler.update(msg),
             Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::GestureHandler(msg) => self.gesture_handler.update(msg),
             Message::ViewHandler(msg) => self.view_handler.update(msg),
@@ -110,6 +112,7 @@ impl MainApp {
     pub fn subscription(&self) -> Subscription<Message> {
         let main_subscription = event::listen().map(Message::IcedEvent);
         let gesture_subscription = self.gesture_handler.subscription().map(Message::GestureHandler);
-        Subscription::batch(vec![main_subscription, gesture_subscription])
+        let input_subscription = self.input_handler.subscription().map(Message::InputHandler);
+        Subscription::batch(vec![main_subscription, gesture_subscription, input_subscription])
     }
 }

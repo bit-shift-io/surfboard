@@ -4,21 +4,34 @@ use iced::{
         key::Named
     }, 
     mouse, 
-    time::Instant, 
+    time::{
+        self, 
+        Instant, 
+        Duration
+    }, 
     touch, 
     Event, 
     Point, 
-    Task, 
+    Subscription, 
+    Task 
 };
 use iced_runtime::Action;
 use super::*;
 
+static LONG_PRESS_DURATION: Duration = Duration::from_millis(600);
+
+#[derive(Debug, Clone)]
+pub enum Message {
+    Tick,
+}
 
 #[derive(Clone, Debug)]
 pub struct InputHandler {
-    pub lmouse_down: bool,
-    pub rmouse_down: bool,
-    pub finger_presses: Vec<(u64, Point, Instant)>,
+    lmouse_down: bool,
+    rmouse_down: bool,
+    finger_presses: Vec<(u64, Point, Instant)>, // id, pos, time
+    timer_enabled: bool,
+    timer_start: Option<Instant>,
 }
 
 impl InputHandler {
@@ -27,10 +40,26 @@ impl InputHandler {
             lmouse_down: false,
             rmouse_down: false,
             finger_presses: Vec::new(),
+            timer_enabled: false,
+            timer_start: None
         }
     }
 
-    pub fn update<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler) -> Task<main_app::Message> {
+    pub fn update<'a>(&mut self, message: Message) -> Task<main_app::Message> {
+        match message {
+            Message::Tick => {
+                let duration = Instant::now().duration_since(self.timer_start.unwrap());
+                if duration >= LONG_PRESS_DURATION {
+                    self.timer_end();
+                    return Task::done(view::Message::ActionGesture(ActionDirection::LongPress)).map(main_app::Message::ViewHandler);
+                }
+                Task::none()
+            },
+            //_ => Task::none()
+        }
+    }
+
+    pub fn update2<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler) -> Task<main_app::Message> {
         match event {
             //Event::Window(event) => todo!(),
 
@@ -47,7 +76,8 @@ impl InputHandler {
                     mouse::Event::ButtonPressed(button) => {
                         match button {
                             mouse::Button::Left => {
-                                self.lmouse_down = true;
+                                self.lmouse_down = true;                        
+                                self.timer_start();
                                 return gesture_handler.start();
                             }
                             mouse::Button::Right => {
@@ -71,6 +101,8 @@ impl InputHandler {
                         }
                     }
                     mouse::Event::CursorMoved { position } => {
+                        self.timer_end();
+
                         if self.lmouse_down {
                             return gesture_handler.append(*position);
                         }
@@ -89,8 +121,11 @@ impl InputHandler {
                 match event {
                     touch::Event::FingerPressed { id, position} => {
                         self.finger_presses.push((id.0, *position, Instant::now()));
+                        self.timer_start();
                     }
                     touch::Event::FingerMoved { id, position} => {
+                        self.timer_end();
+
                         if let Some((_, _, _)) = self.finger_presses.iter_mut().find(|(fid, _, _)| *fid == id.0) {
                             if id.0 == 1 {
                                 info!("Finger 1 moved to: {position}");
@@ -102,7 +137,7 @@ impl InputHandler {
                         // todo check for long press single finger
                         // todo check fo release of second finger - right click
                     }
-                    _ => {}
+                    //_ => {}
                 }
 
                 // Check for multiple finger presses
@@ -126,5 +161,22 @@ impl InputHandler {
         }
     }
 
+    pub fn subscription(&self) -> Subscription<Message> {
+        match self.timer_enabled {
+            true => time::every(Duration::from_millis(100)).map(|_| Message::Tick), // every function not found in iced::time?!
+            false => Subscription::none()
+        }
+    }
 
+    pub fn timer_start(&mut self) {
+        if !self.timer_enabled {
+            self.timer_start = Some(Instant::now());
+            self.timer_enabled = true;
+        }
+    }
+
+    pub fn timer_end(&mut self) {   
+        self.timer_enabled = false;
+        self.timer_start = None;
+    }
 }

@@ -75,6 +75,7 @@ pub enum ActionDirection {
     Bottom,
     BottomLeft,
     Left,
+    LongPress,
 }
 
 impl GestureHandler {
@@ -199,8 +200,7 @@ impl GestureHandler {
             x if x < 290.0 => ActionDirection::Left,
             _ => ActionDirection::TopLeft,
         };
-
-        Task::perform(async { main_app::Message::ViewHandler(view::Message::ActionGesture(direction)) }, |result | result)
+        Task::done(view::Message::ActionGesture(direction)).map(main_app::Message::ViewHandler)
     }
 
     fn handle_view_gesture(&mut self, gesture: Gesture) -> Task<main_app::Message> {

@@ -53,11 +53,11 @@ impl ViewTrait for CompactQwertyView {
                 Key::from_str("b").on_press(main_app::Message::Debug(String::from("t"))),
                 Key::from_str("n").on_press(main_app::Message::Debug(String::from("y"))),
                 Key::from_str("m").on_press(main_app::Message::Debug(String::from("u"))),
-                Key::from_str("Enter").on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::Configuration))),
+                Key::from_str("Enter").on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::Settings))),
             ].padding(0).width(Length::Fill).height(Length::Fill),
 
             row![
-                Key::from_str("@").on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::Configuration))),
+                Key::from_str("@").on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::Settings))),
                 Key::from_str(":)").on_press(main_app::Message::Debug(String::from("q"))),
                 Key::from_str("     ").on_press(main_app::Message::Debug(String::from("w"))),
                 Key::from_str(".").on_press(main_app::Message::Debug(String::from("e"))),
@@ -65,7 +65,7 @@ impl ViewTrait for CompactQwertyView {
                 Key::from_str(">").on_press(main_app::Message::Debug(String::from("t"))),
                 Key::from_str("^").on_press(main_app::Message::Debug(String::from("y"))),
                 Key::from_str("<").on_press(main_app::Message::Debug(String::from("u"))),
-                Key::from_str("^").on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::Configuration))),
+                Key::from_str("^").on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::Settings))),
             ].padding(0).width(Length::Fill).height(Length::Fill),
 
         ].padding(0).width(Length::Fill).height(Length::Fill)

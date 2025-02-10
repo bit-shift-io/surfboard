@@ -70,7 +70,7 @@ impl WindowHandler {
                     }
                 }
             }
-            _ => Task::none()
+            //_ => Task::none()
         }
     }
 
@@ -111,5 +111,38 @@ impl WindowHandler {
         self.margin.3 = x;
         info!("mar: {:?} {:?}", x as i32, y as i32);
         return Task::done(main_app::Message::MarginChange((0, 0, y, x)))
+    }
+}
+
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Dock {
+    Top,
+    #[default]
+    Bottom,
+    Left,
+    Right,
+}
+
+impl Dock {
+    pub const ALL: [Dock; 4] = [
+        Dock::Top,
+        Dock::Bottom,
+        Dock::Left,
+        Dock::Right,
+    ];
+}
+
+impl std::fmt::Display for Dock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}",
+            match self {
+                Dock::Top => "Top",
+                Dock::Bottom => "Bottom",
+                Dock::Left => "Left",
+                Dock::Right => "Right",
+            }
+        )
     }
 }
