@@ -41,9 +41,6 @@ static MIN_DISTANCE: f32 = 20.0; // pixels
 #[derive(Debug, Clone)]
 pub enum Message {
     Tick,
-    Start,
-    End,
-    Move(Point),
 }
 
 #[derive(Clone, Debug)]
@@ -91,9 +88,6 @@ impl GestureHandler {
 
     pub fn update(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
-            Message::Start => self.start(),
-            Message::End => self.end(),
-            Message::Move(point) => self.append(point),
             Message::Tick => {
                 //self.view(); // redraw view?
                 info!("tick");
@@ -210,6 +204,7 @@ impl GestureHandler {
     }
 
     fn handle_view_gesture(&mut self, gesture: Gesture) -> Task<main_app::Message> {
+        // todo dictionary etc... pass to view or actionbar view
         info!("view gesture");
         Task::none()
     }
