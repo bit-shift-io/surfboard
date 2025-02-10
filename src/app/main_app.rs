@@ -82,7 +82,7 @@ impl MainApp {
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::IcedEvent(event) => self.input_handler.update(&event, &mut self.gesture_handler),
+            Message::IcedEvent(event) => self.input_handler.update(&event, &mut self.gesture_handler, &mut self.window_handler),
             Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::GestureHandler(msg) => self.gesture_handler.update(msg),
             Message::ViewHandler(msg) => self.view_handler.update(msg),

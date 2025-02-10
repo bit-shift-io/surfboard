@@ -1,4 +1,4 @@
-use iced::Task;
+use iced::{Point, Task};
 use iced_layershell::reexport::Anchor;
 use super::*;
 
@@ -9,6 +9,8 @@ pub struct WindowHandler {
     pub windowed: bool,
     pub size: (u32, u32),
     pub margin: (i32, i32, i32, i32), // top, right, bottom, left
+    pub moving: bool,
+    move_start: Option<Point>,
 }
 
 
@@ -24,6 +26,8 @@ impl WindowHandler {
             windowed: true,
             size: (600, 250),
             margin: (0, 0, 0, 0),
+            moving: false,
+            move_start: None,
         }
     }
 
@@ -63,37 +67,41 @@ impl WindowHandler {
     }
 
 
-    // // todo move this into window helper, and make it work like the gesture
-    // // start, end, append, update
-    // fn move_window(&mut self, position: Point) -> Task<main_app::Message> {
-    //     // get windows initial position - the margin
-    //     if self.input_handler.rmouse_start.is_none() {
-    //         self.input_handler.rmouse_start = Some(position);
-    //         info!("start: {:?}", self.input_handler.rmouse_start.unwrap());
-    //         return Task::none();
-    //     }
+    pub fn start_move(&mut self) -> Task<main_app::Message> {
+        self.moving = true;
+        self.move_start = None;
+        Task::none()
+    }
 
-    //     // calulate the difference
-    //     let diff = self.input_handler.rmouse_start.unwrap() - position;
-    //     info!("diff: {:?} {:?}", -diff.x as i32, diff.y as i32);
+    pub fn end_move(&mut self) -> Task<main_app::Message> {
+        self.moving = false;
+        Task::none()
+    }
 
-    //     // calculate for the margin change
-    //     let y = diff.y as i32 + self.window_handler.margin.2;
-    //     let x = -diff.x as i32 + self.window_handler.margin.3;
+    pub fn append_move(&mut self, position: Point) -> Task<main_app::Message> {
+        // get windows initial position - the margin
+        if self.move_start.is_none() {
+            self.move_start = Some(position);
+            return Task::none();
+        }
 
-    //     //info!("mar: {:?} {:?}", x as i32, y as i32);
+        // calulate the difference
+        let diff = self.move_start.unwrap() - position;
+        info!("diff: {:?} {:?}", -diff.x as i32, diff.y as i32);
 
-    //     // store the mouse pos
-    //     self.input_handler.rmouse_start = Some(position);
+        // calculate for the margin change
+        let y = diff.y as i32 + self.margin.2;
+        let x = -diff.x as i32 + self.margin.3;
+
+        //info!("mar: {:?} {:?}", x as i32, y as i32);
+
+        // store the mouse pos
+        self.move_start = Some(position);
         
-    //     // apply margin to move window
-    //     self.window_handler.margin.2 = y;
-    //     self.window_handler.margin.3 = x;
-    //     info!("mar: {:?} {:?}", x as i32, y as i32);
-    //     return Task::done(Message::MarginChange((0, 0, y, x)))
-
-    //     //Task::none()
-    // }
-
-
+        // apply margin to move window
+        self.margin.2 = y;
+        self.margin.3 = x;
+        info!("mar: {:?} {:?}", x as i32, y as i32);
+        return Task::done(main_app::Message::MarginChange((0, 0, y, x)))
+    }
 }

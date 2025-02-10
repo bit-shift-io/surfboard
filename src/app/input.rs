@@ -16,25 +16,21 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct InputHandler {
-    //pub context: Option<Weak<RefCell<MainApp>>>,
     pub lmouse_down: bool,
     pub rmouse_down: bool,
-    pub rmouse_start: Option<Point>,
     pub finger_presses: Vec<(u64, Point, Instant)>,
 }
 
 impl InputHandler {
     pub fn new() -> Self {
         InputHandler {
-            //context: None,
             lmouse_down: false,
             rmouse_down: false,
-            rmouse_start: None,
             finger_presses: Vec::new(),
         }
     }
 
-    pub fn update<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler) -> Task<main_app::Message> {
+    pub fn update<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler) -> Task<main_app::Message> {
         match event {
             //Event::Window(event) => todo!(),
 
@@ -55,9 +51,8 @@ impl InputHandler {
                                 return gesture_handler.start();
                             }
                             mouse::Button::Right => {
-                                self.rmouse_start = None;
                                 self.rmouse_down = true;
-                                Task::none()
+                                return window_handler.start_move();
                             }
                             _ => Task::none()
                         }
@@ -70,7 +65,7 @@ impl InputHandler {
                             }
                             mouse::Button::Right => {
                                 self.rmouse_down = false;
-                                Task::none()
+                                return window_handler.end_move();
                             }
                             _ => Task::none()
                         }
@@ -79,10 +74,9 @@ impl InputHandler {
                         if self.lmouse_down {
                             return gesture_handler.append(*position);
                         }
-                        // if self.rmouse_down {
-                        //     return Task::done(main_app::Message::GestureHandler(gesture::Message::Move(*position)))
-                        //     return self.move_window(*position);
-                        // }
+                        if self.rmouse_down {
+                            return window_handler.append_move(*position);
+                        }
                         Task::none()
                     }
                     _ => Task::none()
@@ -105,7 +99,8 @@ impl InputHandler {
                     }
                     touch::Event::FingerLifted { id, ..} | touch::Event::FingerLost { id, ..} => {
                         self.finger_presses.retain(|(fid, _, _)| *fid != id.0);
-                        //todo
+                        // todo check for long press single finger
+                        // todo check fo release of second finger - right click
                     }
                     _ => {}
                 }

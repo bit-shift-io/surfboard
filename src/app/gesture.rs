@@ -95,6 +95,7 @@ impl GestureHandler {
             Message::End => self.end(),
             Message::Move(point) => self.append(point),
             Message::Tick => {
+                //self.view(); // redraw view?
                 info!("tick");
                 //self.update_history();
                 //self.timer_enabled = false;
