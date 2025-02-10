@@ -13,7 +13,7 @@ use iced::{
 use crate::app::*;
 
 
-#[derive(Debug, Clone)]
+#[derive(Copy, Debug, Clone)]
 pub struct ConfigurationView;
 
 
@@ -49,9 +49,5 @@ impl ViewTrait for ConfigurationView {
             .padding(20)
             .width(Length::Fill)
             .into()
-    }
-
-    fn class(&self) -> View {
-        View::Configuration
     }
 }

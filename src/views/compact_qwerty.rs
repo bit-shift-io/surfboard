@@ -9,15 +9,13 @@ use crate::app::*;
 use crate::components::*;
 
 
-#[derive(Debug, Clone)]
-pub struct CompactQwertyView {
-}
+#[derive(Copy, Debug, Clone)]
+pub struct CompactQwertyView {}
 
 
 impl ViewTrait for CompactQwertyView {
     fn new() -> Self {
-        CompactQwertyView {
-        }
+        CompactQwertyView {}
     }
 
     fn view(&self) -> iced::Element<main_app::Message> {
@@ -73,11 +71,7 @@ impl ViewTrait for CompactQwertyView {
         ].padding(0).width(Length::Fill).height(Length::Fill)
         .into()
     }
-    
-    fn class(&self) -> View {
-        View::CompactQwerty
-    }
-    
+
     fn has_gesture(&self) -> bool {
         true
     }

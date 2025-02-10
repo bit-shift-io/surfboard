@@ -34,7 +34,7 @@ impl InputHandler {
         }
     }
 
-    pub fn update(&mut self, event: &Event) -> Task<main_app::Message> {
+    pub fn update<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler) -> Task<main_app::Message> {
         match event {
             //Event::Window(event) => todo!(),
 
@@ -52,16 +52,7 @@ impl InputHandler {
                         match button {
                             mouse::Button::Left => {
                                 self.lmouse_down = true;
-                                // // access the weak reference/context
-                                // info!("context {:?}", self.context);
-                                // if let Some(context) = self.context.as_ref().and_then(|weak| weak.upgrade()) {
-                                //     let mut main_app = context.borrow_mut();
-                                //     println!("Upgraded context and calling gesture_handler.start()");
-                                //     return main_app.gesture_handler.start();
-                                // }
-                                // println!("upgrade failed");
-                                // Task::none()
-                                Task::done(main_app::Message::GestureHandler(gesture::Message::Start))
+                                return gesture_handler.start();
                             }
                             mouse::Button::Right => {
                                 self.rmouse_start = None;
@@ -75,12 +66,7 @@ impl InputHandler {
                         match button {
                             mouse::Button::Left => {
                                 self.lmouse_down = false;
-                                // if let Some(context) = self.context.as_ref().and_then(|weak| weak.upgrade()) {
-                                //     let mut main_app = context.borrow_mut();
-                                //     return main_app.gesture_handler.end();
-                                // }
-                                //Task::none()
-                                Task::done(main_app::Message::GestureHandler(gesture::Message::End))
+                                return gesture_handler.end();
                             }
                             mouse::Button::Right => {
                                 self.rmouse_down = false;
@@ -91,11 +77,7 @@ impl InputHandler {
                     }
                     mouse::Event::CursorMoved { position } => {
                         if self.lmouse_down {
-                            // if let Some(context) = self.context.as_ref().and_then(|weak| weak.upgrade()) {
-                            //     let mut main_app = context.borrow_mut();
-                            //     return main_app.gesture_handler.append(*position);
-                            // }
-                            return Task::done(main_app::Message::GestureHandler(gesture::Message::Move(*position)))
+                            return gesture_handler.append(*position);
                         }
                         // if self.rmouse_down {
                         //     return Task::done(main_app::Message::GestureHandler(gesture::Message::Move(*position)))

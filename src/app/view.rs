@@ -34,7 +34,6 @@ impl View {
 pub trait ViewTrait {
     fn new() -> Self where Self: Sized;
     fn view(&self) -> Element<main_app::Message>;
-    fn class(&self) -> View;
     
     /// Returns true if this view has a gesture to handle, false otherwise.
     /// When a view has a gesture, a canvas is drawn on top of it to intercept

@@ -10,20 +10,18 @@ use crate::components::*;
 
 #[derive(Debug, Clone)]
 pub struct LauncherView {
-    applications: Vec<App>,
+    applications: [App; 3],
 }
 
 
 impl ViewTrait for LauncherView {
     fn new() -> Self {
         // add apps here
-        let applications = vec![
+        let applications = [
             App::new("/usr/share/applications/code.desktop"),
             App::new("/usr/share/applications/org.kde.konsole.desktop"),
             App::new("/usr/share/applications/firefox.desktop"),
         ];
-
-        info!("Applications: {:?}", applications);
 
         LauncherView {
             applications,
@@ -40,11 +38,7 @@ impl ViewTrait for LauncherView {
 
         row(bottom_vec).width(Length::Fill).into()
     }
-    
-    fn class(&self) -> View {
-        View::Launcher
-    }
-    
+
     fn update(&mut self, message: view::Message) -> Task<main_app::Message> {
         match message {
             view::Message::ViewMessage(index) => {
