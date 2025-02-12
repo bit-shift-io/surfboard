@@ -6,6 +6,7 @@ use iced::{
 };
 use crate::app::*;
 use crate::components::*;
+use crate::utils::*;
 
 
 #[derive(Debug, Clone)]
@@ -53,6 +54,10 @@ impl ViewTrait for LauncherView {
     
     fn class(&self) -> View {
         View::Launcher
+    }
+
+    fn icon(&self) -> &'static [u8] {
+        globals::ICON_TABLE
     }
 }
 

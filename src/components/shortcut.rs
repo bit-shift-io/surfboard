@@ -5,20 +5,19 @@ use iced::{
 };
 use crate::components::*;
 use crate::app::*;
-use crate::utils::*;
 
 
 #[allow(unused)]
 #[derive(Debug, Clone, Default)]
 pub struct Shortcut {
     name: String,
-    icon: Option<&'static [u8]>, // PathBuf
+    icon: &'static [u8], // PathBuf
     action: Option<String>,
 }
 
 
 impl Shortcut {
-    pub fn new(name: String, icon: Option<&'static [u8]>, action: Option<String>) -> Self {
+    pub fn new(name: String, icon: &'static [u8], action: Option<String>) -> Self {
         Shortcut {
             name,
             icon,
@@ -27,12 +26,7 @@ impl Shortcut {
     }
 
     fn icon(&self) -> Element<main_app::Message> {
-        let icon = match self.icon {
-            Some(i) => i,
-            None => globals::DEFAULT_ICON,
-        };
-
-        svg(svg::Handle::from_memory(icon))
+        svg(svg::Handle::from_memory(self.icon))
             .width(Length::Fixed(80.))
             .height(Length::Fixed(80.))
             .into()

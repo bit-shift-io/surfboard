@@ -56,7 +56,7 @@ impl ViewTrait for SettingsView {
         View::Settings
     }
     
-    fn icon(&self) -> Option<&'static [u8]> {
-        Some(globals::SETTINGS_ICON)
+    fn icon(&self) -> &'static [u8] {
+        globals::ICON_SETTINGS
     }
 }

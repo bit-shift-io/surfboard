@@ -81,8 +81,8 @@ impl ViewTrait for CompactQwertyView {
         View::CompactQwerty
     }
     
-    fn icon(&self) -> Option<&'static [u8]> {
-        Some(globals::SETTINGS_ICON)
+    fn icon(&self) -> &'static [u8] {
+        globals::ICON_KEYBOARD
     }
 }
 

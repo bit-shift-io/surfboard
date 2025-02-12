@@ -59,7 +59,7 @@ impl App {
                         .into()
                 }
             }
-            None => svg(svg::Handle::from_memory(globals::DEFAULT_ICON))
+            None => svg(svg::Handle::from_memory(globals::ICON_DEFAULT))
                 .width(Length::Fixed(80.))
                 .height(Length::Fixed(80.))
                 .into(),

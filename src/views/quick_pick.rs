@@ -6,6 +6,7 @@ use iced::{
 };
 use crate::app::*;
 use crate::components::*;
+use crate::utils::*;
 
 
 #[derive(Debug, Clone)]
@@ -42,7 +43,7 @@ impl ViewTrait for MiniPickView {
         let shortcuts: Vec<Shortcut> = filtered_list
             .iter()
             .enumerate()
-            .map(|(index, view)| Shortcut::new(view.name(), None, None))
+            .map(|(index, view)| Shortcut::new(view.name(), view.icon(), None))
             .collect();
 
         self.shortcuts = Some(shortcuts);
@@ -75,6 +76,10 @@ impl ViewTrait for MiniPickView {
     
     fn class(&self) -> View {
         View::QuickPick
+    }
+
+    fn icon(&self) -> &'static [u8] {
+        globals::ICON_ROCKET
     }
 }
 

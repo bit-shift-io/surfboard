@@ -4,7 +4,7 @@ use iced::{
 };
 use std::fmt;
 use super::*;
-use crate::views::*;
+use crate::{utils::*, views::*};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum View {
@@ -48,7 +48,7 @@ pub trait ViewTrait {
     fn update(&mut self, _message: Message) -> Task<main_app::Message> {Task::none()}
     fn class(&self) -> View;
     fn name(&self) -> String {self.class().to_string()}
-    fn icon(&self) -> Option<&'static [u8]> {None}
+    fn icon(&self) -> &'static [u8] {globals::ICON_DEFAULT}
     
     /// Returns true if this view has a gesture to handle, false otherwise.
     /// When a view has a gesture, a canvas is drawn on top of it to intercept
