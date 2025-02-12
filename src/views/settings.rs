@@ -11,6 +11,7 @@ use iced::{
         Theme
     };
 use crate::app::*;
+use crate::utils::*;
 
 
 #[derive(Copy, Debug, Clone)]
@@ -55,7 +56,7 @@ impl ViewTrait for SettingsView {
         View::Settings
     }
     
-    fn name(&self) -> String {
-        String::from("Settings")
+    fn icon(&self) -> Option<&'static [u8]> {
+        Some(globals::SETTINGS_ICON)
     }
 }

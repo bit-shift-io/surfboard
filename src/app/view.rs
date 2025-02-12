@@ -11,7 +11,8 @@ pub enum View {
     CompactQwerty,
     Settings,
     Launcher,
-    MiniPick
+    QuickPick,
+    Pick,
     // Add more views/layouts here
 }
 
@@ -21,18 +22,20 @@ impl std::fmt::Display for View {
             View::CompactQwerty => write!(f, "Compact QWERTY"),
             View::Settings => write!(f, "Settings"),
             View::Launcher => write!(f, "Launcher"),
-            View::MiniPick => write!(f, "Mini Pick"),
+            View::QuickPick => write!(f, "Quick Pick"),
+            View::Pick => write!(f, "Pick"),
             // Add more views/layouts here
         }
     }
 }
 
 impl View {
-    pub const ALL: [View; 4] = [
+    pub const ALL: [View; 5] = [
         View::CompactQwerty,
         View::Settings,
         View::Launcher,
-        View::MiniPick
+        View::QuickPick,
+        View::Pick,
         // Add more views/layouts here
     ];
 }
@@ -44,7 +47,8 @@ pub trait ViewTrait {
     fn view(&self, view_handler: &ViewHandler) -> Element<main_app::Message>;
     fn update(&mut self, _message: Message) -> Task<main_app::Message> {Task::none()}
     fn class(&self) -> View;
-    fn name(&self) -> String;
+    fn name(&self) -> String {self.class().to_string()}
+    fn icon(&self) -> Option<&'static [u8]> {None}
     
     /// Returns true if this view has a gesture to handle, false otherwise.
     /// When a view has a gesture, a canvas is drawn on top of it to intercept
@@ -68,7 +72,7 @@ impl fmt::Debug for dyn ViewTrait + 'static {
 #[derive(Debug)]
 pub struct ViewHandler {
     pub current_view: View,
-    pub views: [Box<dyn ViewTrait>;4], // Add more views/layouts here
+    pub views: [Box<dyn ViewTrait>; 5], // Add more views/layouts here
 }
 
 #[derive(Debug, Clone)]
@@ -80,11 +84,12 @@ pub enum Message {
 
 impl ViewHandler {
     pub fn new() -> Self {
-        let views: [Box<dyn ViewTrait>; 4] = [
+        let views: [Box<dyn ViewTrait>; 5] = [
             Box::new(CompactQwertyView::new()),
             Box::new(SettingsView::new()),
             Box::new(LauncherView::new()),
             Box::new(MiniPickView::new()),
+            Box::new(PickView::new()),
             // Add more views/layouts here
         ];
 
@@ -123,7 +128,7 @@ impl ViewHandler {
                     ActionDirection::Bottom => View::Launcher,
                     ActionDirection::BottomLeft => View::CompactQwerty,
                     ActionDirection::Left => View::CompactQwerty,
-                    ActionDirection::LongPress => View::Settings,
+                    ActionDirection::LongPress => View::Pick,
                 };
                 Task::done(Message::ChangeView(view_class)).map(main_app::Message::ViewHandler)
             }

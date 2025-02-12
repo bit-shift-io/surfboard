@@ -74,11 +74,7 @@ impl ViewTrait for MiniPickView {
     }
     
     fn class(&self) -> View {
-        View::MiniPick
-    }
-    
-    fn name(&self) -> String {
-        String::from("Mini Pick")
+        View::QuickPick
     }
 }
 

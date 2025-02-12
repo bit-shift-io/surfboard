@@ -1,8 +1,6 @@
-use std::path::PathBuf;
-use iced::widget::{image, 
-    svg
-};
-use iced::{Element, 
+use iced::widget::svg;
+use iced::{
+    Element, 
     Length
 };
 use crate::components::*;
@@ -14,13 +12,13 @@ use crate::utils::*;
 #[derive(Debug, Clone, Default)]
 pub struct Shortcut {
     name: String,
-    icon: Option<PathBuf>,
+    icon: Option<&'static [u8]>, // PathBuf
     action: Option<String>,
 }
 
 
 impl Shortcut {
-    pub fn new(name: String, icon: Option<PathBuf>, action: Option<String>) -> Self {
+    pub fn new(name: String, icon: Option<&'static [u8]>, action: Option<String>) -> Self {
         Shortcut {
             name,
             icon,
@@ -29,29 +27,15 @@ impl Shortcut {
     }
 
     fn icon(&self) -> Element<main_app::Message> {
-        match &self.icon {
-            Some(path) => {
-                if path
-                    .as_os_str()
-                    .to_str()
-                    .is_some_and(|pathname| pathname.ends_with("png"))
-                {
-                    image(image::Handle::from_path(path))
-                        .width(Length::Fixed(80.))
-                        .height(Length::Fixed(80.))
-                        .into()
-                } else {
-                    svg(svg::Handle::from_path(path))
-                        .width(Length::Fixed(80.))
-                        .height(Length::Fixed(80.))
-                        .into()
-                }
-            }
-            None => svg(svg::Handle::from_memory(globals::DEFAULT_ICON))
-                .width(Length::Fixed(80.))
-                .height(Length::Fixed(80.))
-                .into(),
-        }
+        let icon = match self.icon {
+            Some(i) => i,
+            None => globals::DEFAULT_ICON,
+        };
+
+        svg(svg::Handle::from_memory(icon))
+            .width(Length::Fixed(80.))
+            .height(Length::Fixed(80.))
+            .into()
     }
 
     pub fn view(&self, index: usize) -> Element<main_app::Message> {

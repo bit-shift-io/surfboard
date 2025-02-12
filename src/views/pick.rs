@@ -9,41 +9,47 @@ use crate::components::*;
 
 
 #[derive(Debug, Clone)]
-pub struct LauncherView {
-    applications: [App; 3],
+pub struct PickView {
+    shortcuts: Option<Vec<Shortcut>>,
 }
 
 
-impl ViewTrait for LauncherView {
+impl ViewTrait for PickView {
     fn new() -> Self {
-        // add apps here
-        let applications = [
-            App::new("/usr/share/applications/code.desktop"),
-            App::new("/usr/share/applications/org.kde.konsole.desktop"),
-            App::new("/usr/share/applications/firefox.desktop"),
-        ];
-
-        LauncherView {
-            applications,
+        PickView {
+            shortcuts: None,
         }
     }
 
+    fn init(&mut self, view_handler: &mut ViewHandler) {
+        // convert all views to shortcuts
+        let shortcuts: Vec<Shortcut> = view_handler.views
+            .iter()
+            .enumerate()
+            .map(|(index, view)| Shortcut::new(view.name(), view.icon(), None))
+            .collect();
+
+        self.shortcuts = Some(shortcuts);
+
+        info!("{:?}", self.shortcuts);
+    }
+
     fn view(&self, _view_handler: &ViewHandler) -> Element<main_app::Message> {
-        let apps: Vec<Element<main_app::Message>> = 
-            self.applications
+        let shortcuts: Vec<Element<main_app::Message>> = 
+            self.shortcuts.as_ref().unwrap()
             .iter()
             .enumerate()
             .map(|(filter_index, app)| app.view(filter_index))
             .collect();
 
-        row(apps).width(Length::Fill).into()
+        row(shortcuts).width(Length::Fill).into()
     }
 
     fn update(&mut self, message: view::Message) -> Task<main_app::Message> {
         match message {
             view::Message::ViewMessage(index) => {
                 // optionally we should have each app with an on_pressed? custom widget is needed then?
-                self.applications[index].launch();
+                //self.views[index].launch();
             }
             _ => {}
         }
@@ -52,7 +58,7 @@ impl ViewTrait for LauncherView {
     }
     
     fn class(&self) -> View {
-        View::Launcher
+        View::Pick
     }
 }
 

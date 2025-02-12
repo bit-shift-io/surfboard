@@ -18,7 +18,7 @@ use iced::{
 use iced_runtime::Action;
 use super::*;
 
-static LONG_PRESS_DURATION: Duration = Duration::from_millis(600);
+static LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -48,6 +48,9 @@ impl InputHandler {
     pub fn update<'a>(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
             Message::Tick => {
+                if !self.timer_enabled {
+                    return Task::none()
+                }
                 let duration = Instant::now().duration_since(self.timer_start.unwrap());
                 if duration >= LONG_PRESS_DURATION {
                     self.timer_end();

@@ -7,6 +7,7 @@ use iced::{
 };
 use crate::app::*;
 use crate::components::*;
+use crate::utils::*;
 
 
 #[derive(Copy, Debug, Clone)]
@@ -80,8 +81,8 @@ impl ViewTrait for CompactQwertyView {
         View::CompactQwerty
     }
     
-    fn name(&self) -> String {
-        String::from("Compact QWERTY")
+    fn icon(&self) -> Option<&'static [u8]> {
+        Some(globals::SETTINGS_ICON)
     }
 }
 
