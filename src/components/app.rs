@@ -12,8 +12,8 @@ use iced::{Element,
 };
 use crate::components::*;
 use crate::app::*;
+use crate::utils::*;
 
-static DEFAULT_ICON: &[u8] = include_bytes!("../../res/ghost-solid.svg");
 
 #[allow(unused)]
 #[derive(Debug, Clone, Default)]
@@ -59,7 +59,7 @@ impl App {
                         .into()
                 }
             }
-            None => svg(svg::Handle::from_memory(DEFAULT_ICON))
+            None => svg(svg::Handle::from_memory(globals::DEFAULT_ICON))
                 .width(Length::Fixed(80.))
                 .height(Length::Fixed(80.))
                 .into(),

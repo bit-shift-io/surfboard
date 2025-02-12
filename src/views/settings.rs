@@ -22,7 +22,7 @@ impl ViewTrait for SettingsView {
         SettingsView{}
     }
 
-    fn view(&self) -> Element<main_app::Message> {
+    fn view(&self, _view_handler: &ViewHandler) -> Element<main_app::Message> {
         let view_main = Button::new(Text::new("main")).on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::CompactQwerty)));
         let view_launcher = Button::new(Text::new("launcher")).on_press(main_app::Message::ViewHandler(view::Message::ChangeView(View::Launcher)));
         
@@ -49,5 +49,13 @@ impl ViewTrait for SettingsView {
             .padding(20)
             .width(Length::Fill)
             .into()
+    }
+    
+    fn class(&self) -> View {
+        View::Settings
+    }
+    
+    fn name(&self) -> String {
+        String::from("Settings")
     }
 }

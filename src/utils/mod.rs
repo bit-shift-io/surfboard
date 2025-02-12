@@ -1,4 +1,4 @@
 pub mod functions;
-//pub mod signals;
+pub mod globals;
 
 // re-export

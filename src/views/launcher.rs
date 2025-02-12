@@ -28,15 +28,15 @@ impl ViewTrait for LauncherView {
         }
     }
 
-    fn view(&self) -> Element<main_app::Message> {
-        let bottom_vec: Vec<Element<main_app::Message>> = 
+    fn view(&self, _view_handler: &ViewHandler) -> Element<main_app::Message> {
+        let apps: Vec<Element<main_app::Message>> = 
             self.applications
             .iter()
             .enumerate()
             .map(|(filter_index, app)| app.view(filter_index))
             .collect();
 
-        row(bottom_vec).width(Length::Fill).into()
+        row(apps).width(Length::Fill).into()
     }
 
     fn update(&mut self, message: view::Message) -> Task<main_app::Message> {
@@ -49,6 +49,14 @@ impl ViewTrait for LauncherView {
         }
         
         Task::none()
+    }
+    
+    fn class(&self) -> View {
+        View::Launcher
+    }
+    
+    fn name(&self) -> String {
+        String::from("Launcher")
     }
 }
 

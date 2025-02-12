@@ -26,7 +26,8 @@ pub fn main() -> iced_layershell::Result {
     let start_mode = handle_args();
 
     // now we can put whatever we want into app!
-    let app = MainApp::new();
+    let mut app = MainApp::new();
+    app.0.init();
 
     application(MainApp::namespace, MainApp::update, MainApp::view)
         .layer_settings(MainApp::default_layer_shell(start_mode))

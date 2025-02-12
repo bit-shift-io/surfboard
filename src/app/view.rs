@@ -11,6 +11,8 @@ pub enum View {
     CompactQwerty,
     Settings,
     Launcher,
+    MiniPick
+    // Add more views/layouts here
 }
 
 impl std::fmt::Display for View {
@@ -19,22 +21,30 @@ impl std::fmt::Display for View {
             View::CompactQwerty => write!(f, "Compact QWERTY"),
             View::Settings => write!(f, "Settings"),
             View::Launcher => write!(f, "Launcher"),
+            View::MiniPick => write!(f, "Mini Pick"),
+            // Add more views/layouts here
         }
     }
 }
 
 impl View {
-    pub const ALL: [View; 3] = [
+    pub const ALL: [View; 4] = [
         View::CompactQwerty,
         View::Settings,
         View::Launcher,
+        View::MiniPick
+        // Add more views/layouts here
     ];
 }
 
+
 pub trait ViewTrait {
     fn new() -> Self where Self: Sized;
-    fn view(&self) -> Element<main_app::Message>;
+    fn init(&mut self, view_handler: &mut ViewHandler) {}
+    fn view(&self, view_handler: &ViewHandler) -> Element<main_app::Message>;
     fn update(&mut self, _message: Message) -> Task<main_app::Message> {Task::none()}
+    fn class(&self) -> View;
+    fn name(&self) -> String;
     
     /// Returns true if this view has a gesture to handle, false otherwise.
     /// When a view has a gesture, a canvas is drawn on top of it to intercept
@@ -45,8 +55,6 @@ pub trait ViewTrait {
         // todo remove this fn and make it a message?
         false
     }
-
-
 }
 
 impl fmt::Debug for dyn ViewTrait + 'static {
@@ -57,12 +65,10 @@ impl fmt::Debug for dyn ViewTrait + 'static {
 
 
 // todo view handler which stores history of view, and manages the action gestures, view switching, and panes
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ViewHandler {
-    pub current_view: View, // enum
-    pub compact_qwerty: CompactQwertyView,
-    pub settings: SettingsView,
-    pub launcher: LauncherView,
+    pub current_view: View,
+    pub views: [Box<dyn ViewTrait>;4], // Add more views/layouts here
 }
 
 #[derive(Debug, Clone)]
@@ -74,11 +80,30 @@ pub enum Message {
 
 impl ViewHandler {
     pub fn new() -> Self {
+        let views: [Box<dyn ViewTrait>; 4] = [
+            Box::new(CompactQwertyView::new()),
+            Box::new(SettingsView::new()),
+            Box::new(LauncherView::new()),
+            Box::new(MiniPickView::new()),
+            // Add more views/layouts here
+        ];
+
         ViewHandler {
             current_view: View::CompactQwerty,
-            compact_qwerty: CompactQwertyView::new(),
-            settings: SettingsView::new(),
-            launcher: LauncherView::new(),
+            views,
+        }
+    }
+
+    pub fn init(&mut self) {
+        info!("Initializing views");
+        // Create a temporary reference to self
+        let view_handler = self as *mut ViewHandler;
+
+        for view in self.views.iter_mut() {
+            // SAFETY: We know that view_handler is valid for the duration of this loop
+            unsafe {
+                view.init(&mut *view_handler);
+            }
         }
     }
 
@@ -108,22 +133,22 @@ impl ViewHandler {
     }
 
     pub fn view(&self) -> Element<main_app::Message> {
-        self.current_view().view()
+        self.current_view().view(self)
     }
 
-    pub fn current_view(&self) -> &dyn ViewTrait {
-        match self.current_view {
-            View::CompactQwerty => &self.compact_qwerty,
-            View::Settings => &self.settings,
-            View::Launcher => &self.launcher,
-        }
+    pub fn current_view(&self) -> &Box<dyn ViewTrait> {
+        self.views.iter().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
 
-    pub fn current_view_mut(&mut self) -> &mut dyn ViewTrait {
-        match self.current_view {
-            View::CompactQwerty => &mut self.compact_qwerty,
-            View::Settings => &mut self.settings,
-            View::Launcher => &mut self.launcher,
-        }
+    pub fn current_view_mut(&mut self) -> &mut Box<dyn ViewTrait> {
+        self.views.iter_mut().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
+
+    pub fn all_class(&self) -> Vec<View> {
+        self.views.iter().map(|view| view.class()).collect()
+    }
+
+    // pub fn collect_as_string(&self) -> Vec<&str> {
+    //     self.views.iter().map(|view| view.name()).collect()
+    // }
 }

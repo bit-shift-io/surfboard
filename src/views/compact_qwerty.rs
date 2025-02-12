@@ -18,7 +18,7 @@ impl ViewTrait for CompactQwertyView {
         CompactQwertyView {}
     }
 
-    fn view(&self) -> iced::Element<main_app::Message> {
+    fn view(&self, _view_handler: &ViewHandler) -> iced::Element<main_app::Message> {
         column![
             row![
                 Key::from_str("q").on_press(main_app::Message::Debug(String::from("q"))),
@@ -74,6 +74,14 @@ impl ViewTrait for CompactQwertyView {
 
     fn has_gesture(&self) -> bool {
         true
+    }
+    
+    fn class(&self) -> View {
+        View::CompactQwerty
+    }
+    
+    fn name(&self) -> String {
+        String::from("Compact QWERTY")
     }
 }
 

@@ -18,7 +18,7 @@ use iced_layershell::{
 use crate::*;
 
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct MainApp {
     pub gesture_handler: GestureHandler,
     pub window_handler: WindowHandler,
@@ -71,6 +71,10 @@ impl MainApp {
     pub fn new() -> (Self, Task<Message>) {
         let default = Self::default();
         (default, Task::none())
+    }
+
+    pub fn init(&mut self) {
+        self.view_handler.init();
     }
 
     pub fn view(&self) -> Element<Message> {
