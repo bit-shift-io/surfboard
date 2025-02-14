@@ -1,3 +1,5 @@
+use iced::widget::svg;
+
 pub struct Path {
     //pub command: String,
     pub rules: Vec<String>,
@@ -28,13 +30,13 @@ impl Path {
     // }
 
     /// Adds rule `"M x y"`
-    pub fn move_to(&mut self, pos: [usize;2]) {
-        self.rules.push(format!("M {} {} ",pos[0],pos[1]));
+    pub fn move_to(&mut self, pos: [usize; 2]) {
+        self.rules.push(format!("M {} {} ", pos[0], pos[1]));
     }
 
     /// Adds rule `"l x y"`
-    pub fn line_to(&mut self, pos: [usize;2]) {
-        self.rules.push(format!("L {} {} ",pos[0],pos[1]));
+    pub fn line_to(&mut self, pos: [usize; 2]) {
+        self.rules.push(format!("L {} {} ", pos[0], pos[1]));
     }
 
     /// Replace first rule L -> M
@@ -58,12 +60,12 @@ impl Path {
     }
 
     /// Add point to the rules
-    pub fn add_point(&mut self, pos: [usize;2]) {
+    pub fn add_point(&mut self, pos: [usize; 2]) {
         // a new line, move to
         if self.rules.len() == 0 {
             self.move_to(pos);
-            return
-        } 
+            return;
+        }
 
         // larger than size, remove one, and change the new start to move
         if self.rules.len() >= self.length {
@@ -85,7 +87,17 @@ impl Path {
     }
 }
 
+pub fn set_fill(svg_bytes: &[u8], color: String) -> &'static [u8] {
+    let mut svg = String::from_utf8_lossy(svg_bytes).to_string();
 
-pub fn set_color(svg_bytes: &[u8], color: String) -> &[u8] {
-    return svg_bytes
+    // Modify the fill attribute of the path
+    if let Some(start) = svg.find("<path") {
+        if let Some(end) = svg[start..].find("/>") {
+            let end_index = start + end;
+            svg.insert_str(end_index, &format!(r#" fill="{}""#, color).as_str());
+        }
+    }
+
+    // leak memory by storing the svg in memory
+    Box::leak(svg.into_bytes().into_boxed_slice())
 }
