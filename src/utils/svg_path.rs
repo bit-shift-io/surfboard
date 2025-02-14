@@ -84,3 +84,8 @@ impl Path {
         path
     }
 }
+
+
+pub fn set_color(svg_bytes: &[u8], color: String) -> &[u8] {
+    return svg_bytes
+}

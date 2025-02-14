@@ -40,29 +40,15 @@ function main {
 
 
 function fn_mod_svg {
-    #cd res
     for file in res/*.svg; do
         echo $'\n'"$file"
-
-
-        #xmlstarlet ed -s //* -t attr -n fill -v white "$file"
-        #xmlstarlet ed -L -s /svg/path -t attr -n fill -v white "$file"
-        xmlstarlet ed -s //path -t attr -n fill -v white "$file"  # Add if missing
-
-        # 2. Update existing fill attributes
-        xmlstarlet ed -L -u //path/@fill -v white "$file" # Update if existing
-
-
-        # 2. Remove comments from the temporary file and overwrite the original
-        xmlstarlet ed -L --delete '//comment()' "$file"
         
-        # remove xml version
-        xmlstarlet ed -L --omit-decl "$file"
+        # remove comments
+        sed -i 's/<!--.*-->//g' "$file"
         
-        # remove new lines
-        sed -i ':a;N;$!ba;s/\n//g' "$file"
+        # remove new lines space etc between tags
+        sed -i 's/>[[:space:]]*</></g' "$file"
     done
-    #cd ..
 }
 
 
