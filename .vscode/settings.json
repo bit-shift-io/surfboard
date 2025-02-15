@@ -13,5 +13,7 @@
     },
     "debug.hideSlowPreLaunchWarning": true,
     "cmake.ignoreCMakeListsMissing": true,
-
+    "editor.guides.bracketPairs": true,
+    "editor.guides.highlightActiveBracketPair": false,
+    "editor.guides.bracketPairsHorizontal": false,
 }

@@ -33,10 +33,11 @@ use crate::{
     utils::*,
 };
 
-static FADE_DURATION: u128 = 1500; // ms
+static FADE_DURATION: u128 = 1100; // ms
 static ACTION_GESTURE_DURATION: u128 = 250; // ms
-static MIN_DISTANCE: f32 = 20.0; // pixels
-
+static MIN_DISTANCE: f32 = 5.0; // pixels
+static MAX_WIDTH: f32 = 20.0; // Max initial width
+static MAX_OPACITY: f32 = 0.1; // Max initial opacity
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -251,9 +252,6 @@ impl<'a> GestureView<'a> {
     /// Create the path using a Builder closure
     /// create the line in reverse order
     fn draw_line_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
-        //let gesture_data = self.gesture_data.clone();
-        let max_width = 16u128; // Max initial width
-        let max_opacity = 0.3; // Max initial opacity
         let now = Instant::now();
         let mut prev_point = gesture.buffer.last().unwrap().point;
 
@@ -274,25 +272,19 @@ impl<'a> GestureView<'a> {
                 return frame;
             }
 
-            //let progress = 1.0 - (time_elapsed / fade_duration);
             // Calculate fade progress using integer math for time_elapsed and fade_duration
-            let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
-
-            //let width = max_width * progress; // width narrows
-            //let opacity = max_opacity * progress; // fade out
             // Calculate width and opacity based on progress
-            let width = (max_width as f32 * progress).max(1.0); // Ensure width doesn't go below 1.0
-            let opacity = (max_opacity * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
-
-            // debug
-            //let opacity = 0.5;
-            //let width = 16.0;
+            let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
+            let width = (MAX_WIDTH * progress).max(1.0); // Ensure width doesn't go below 1.0
+            let opacity = (MAX_OPACITY * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
 
             frame.stroke(
                 &path,
                 Stroke {
                     style: Color::from_rgba(0.3, 0.1, 0.8, opacity).into(),
                     width,
+                    line_cap: LineCap::Round,
+                    line_join: LineJoin::Round,
                     ..Default::default()
                 },
             );
@@ -304,8 +296,6 @@ impl<'a> GestureView<'a> {
     /// Create the path using a Builder closure
     /// create the line in reverse order
     fn draw_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
-        let max_width = 20u128; // Max initial width
-        let max_opacity = 0.3; // Max initial opacity
         let now = Instant::now();
         let mut prev_point = gesture.buffer.last().unwrap().point;
 
@@ -340,8 +330,8 @@ impl<'a> GestureView<'a> {
             // Calculate fade progress using integer math for time_elapsed and fade_duration
             // Calculate width and opacity based on progress
             let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
-            let width = (max_width as f32 * progress).max(1.0); // Ensure width doesn't go below 1.0
-            let opacity = (max_opacity * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
+            let width = (MAX_WIDTH * progress).max(1.0); // Ensure width doesn't go below 1.0
+            let opacity = (MAX_OPACITY * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
 
             // debug
             //let opacity = 0.5;
@@ -379,7 +369,7 @@ impl<'a, Message> Program<Message> for GestureView<'a> {
         // draw all gestures
         for gesture in self.handler.get_all_gestures().iter() {
             if gesture.buffer.len() > 1 {
-                frame = self.draw_segment_method(gesture, frame);
+                frame = self.draw_line_segment_method(gesture, frame);
             }
         }
 

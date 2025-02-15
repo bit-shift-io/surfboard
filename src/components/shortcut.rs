@@ -8,19 +8,18 @@ use iced::{Element, Length};
 #[derive(Debug, Clone, Default)]
 pub struct Shortcut {
     name: String,
-    icon: &'static [u8], // PathBuf
+    icon: &'static [u8],
     action: Option<String>,
 }
 
 impl Shortcut {
     pub fn new(name: String, icon: &'static [u8], action: Option<String>) -> Self {
+        let icon = svg_path::set_fill(icon, String::from("White"));
         Shortcut { name, icon, action }
     }
 
     fn icon(&self) -> Element<main_app::Message> {
-        let icon = svg_path::set_fill(self.icon, String::from("White"));
-
-        svg(svg::Handle::from_memory(icon))
+        svg(svg::Handle::from_memory(self.icon))
             .width(Length::Fixed(80.))
             .height(Length::Fixed(80.))
             .into()

@@ -1,21 +1,17 @@
 #[macro_use]
 extern crate log;
-
+use iced::Task;
 use iced_layershell::{
-    settings::{
-        LayerShellSettings, 
-        StartMode
-    },
     build_pattern::application,
+    settings::{LayerShellSettings, StartMode},
 };
 
 mod app;
+mod components;
 mod utils;
 mod views;
-mod components;
-use utils::*;
 use app::*;
-
+use utils::*;
 
 pub fn main() -> iced_layershell::Result {
     functions::init_env_var();
@@ -35,7 +31,6 @@ pub fn main() -> iced_layershell::Result {
         .subscription(MainApp::subscription)
         .run_with(move || app)
 }
-
 
 fn handle_args() -> StartMode {
     let args: Vec<String> = std::env::args().collect();

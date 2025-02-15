@@ -65,6 +65,17 @@ impl MainApp {
         stack![self.view_handler.view(), self.gesture_handler.view(),].into()
     }
 
+    // pub fn instance() -> &'static MainApp {
+    //     static mut INSTANCE: Option<MainApp> = None;
+    //     unsafe {
+    //         if INSTANCE.is_none() {
+    //             let (app, _) = MainApp::new();
+    //             INSTANCE = Some(app);
+    //         }
+    //         INSTANCE.as_mut().unwrap()
+    //     }
+    // }
+
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::IcedEvent(event) => self.input_handler.update2(
