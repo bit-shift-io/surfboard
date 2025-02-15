@@ -35,9 +35,11 @@ use crate::{
 
 static FADE_DURATION: u128 = 1100; // ms
 static ACTION_GESTURE_DURATION: u128 = 250; // ms
-static MIN_DISTANCE: f32 = 5.0; // pixels
+static MIN_DISTANCE: f32 = 20.0; // pixels
 static MAX_WIDTH: f32 = 20.0; // Max initial width
 static MAX_OPACITY: f32 = 0.1; // Max initial opacity
+static COLOR: Color = Color::from_rgba(0.6, 0.8, 1.0, 1.0);
+static CONTROL_POINT_PERCENT: f32 = 0.3;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -241,7 +243,7 @@ impl<'a> GestureView<'a> {
         frame.stroke(
         &path,
         Stroke {
-            style: Color::from_rgba(0.6, 0.8, 1.0, 0.3).into(),
+            style: COLOR.scale_alpha(0.5).into(),
             width: 8.0,
             ..Default::default()
         });
@@ -281,7 +283,7 @@ impl<'a> GestureView<'a> {
             frame.stroke(
                 &path,
                 Stroke {
-                    style: Color::from_rgba(0.3, 0.1, 0.8, opacity).into(),
+                    style: COLOR.scale_alpha(opacity).into(),
                     width,
                     line_cap: LineCap::Round,
                     line_join: LineJoin::Round,
@@ -296,30 +298,42 @@ impl<'a> GestureView<'a> {
     /// Create the path using a Builder closure
     /// create the line in reverse order
     fn draw_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
+        // points are all stored in gesture.buffer, which is a Vector of GestureData {Point, Instant}
         let now = Instant::now();
         let mut prev_point = gesture.buffer.last().unwrap().point;
+        let mut prev_tangent = Point::new(0.0, 0.0);
 
-        for (_i, data) in gesture.buffer.iter().enumerate().rev() {
+        for (i, data) in gesture.buffer.iter().enumerate().rev() {
             // draw curve
-            let next_point = data.point;
+            let current_point = data.point;
+            let next_point = if i > 0 { gesture.buffer[i - 1].point } else { current_point };
 
-            // Generate control points using Catmull-Rom (for smoother curves)
-            let control_point1 = Point::new(
-                prev_point.x + (next_point.x - prev_point.x) * 0.5, 
-                prev_point.y + (next_point.y - prev_point.y) * 0.5
+            // Calculate the tangent vector at the current point
+            let tangent = Point::new(
+                (next_point.x - prev_point.x) * CONTROL_POINT_PERCENT,
+                (next_point.y - prev_point.y) * CONTROL_POINT_PERCENT,
             );
 
-            let control_point2 = Point::new(
-                next_point.x + (next_point.x - prev_point.x) * 0.5, 
-                next_point.y + (next_point.y - prev_point.y) * 0.5
+            // Calculate control points using the previous tangent and the current tangent
+            let prev_control = Point::new(
+                prev_point.x + prev_tangent.x, // * CONTROL_POINT_PERCENT,
+                prev_point.y + prev_tangent.y, // * CONTROL_POINT_PERCENT,
+            );
+
+            // calculate new tangent for the end of the segment
+            let current_control = Point::new(
+                current_point.x - tangent.x, // * CONTROL_POINT_PERCENT,
+                current_point.y - tangent.y, // * CONTROL_POINT_PERCENT,
             );
 
             let path = Path::new(|builder| {
-                builder.move_to(prev_point);
-                builder.bezier_curve_to(control_point1, control_point2, next_point);
+                builder.move_to(prev_point); // first point
+                builder.bezier_curve_to(prev_control, current_control, current_point);
             });
 
-            prev_point = next_point;
+            prev_point = current_point;
+            prev_tangent = Point::new(-tangent.x, -tangent.y); // Reflect the tangent for the next segment
+
 
             // apply styling to curve
             let time_elapsed = now.duration_since(data.instant).as_millis();
@@ -333,17 +347,13 @@ impl<'a> GestureView<'a> {
             let width = (MAX_WIDTH * progress).max(1.0); // Ensure width doesn't go below 1.0
             let opacity = (MAX_OPACITY * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
 
-            // debug
-            //let opacity = 0.5;
-            //let width = 16.0;
-
             frame.stroke(
                 &path,
                 Stroke {
-                    style: Color::from_rgba(0.3, 0.1, 0.8, opacity).into(),
+                    style: COLOR.scale_alpha(opacity).into(),
                     width,
                     line_cap: LineCap::Butt,
-                    line_join: LineJoin::Bevel,
+                    line_join: LineJoin::Round,
                     ..Default::default()
                 },
             );
@@ -369,7 +379,7 @@ impl<'a, Message> Program<Message> for GestureView<'a> {
         // draw all gestures
         for gesture in self.handler.get_all_gestures().iter() {
             if gesture.buffer.len() > 1 {
-                frame = self.draw_line_segment_method(gesture, frame);
+                frame = self.draw_segment_method(gesture, frame);
             }
         }
 

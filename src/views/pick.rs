@@ -49,8 +49,10 @@ impl ViewTrait for PickView {
     fn update(&mut self, message: view::Message) -> Task<main_app::Message> {
         match message {
             view::Message::ViewMessage(index) => {
-                // optionally we should have each app with an on_pressed? custom widget is needed then?
-                //self.views[index].launch();
+                if let Some(shortctus) = self.shortcuts.as_mut() {
+                    let item = &shortctus[index];
+                    let action = &item.action;
+                }
             }
             _ => {}
         }

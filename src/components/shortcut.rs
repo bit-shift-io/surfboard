@@ -7,9 +7,9 @@ use iced::{Element, Length};
 #[allow(unused)]
 #[derive(Debug, Clone, Default)]
 pub struct Shortcut {
-    name: String,
-    icon: &'static [u8],
-    action: Option<String>,
+    pub name: String,
+    pub icon: &'static [u8],
+    pub action: Option<String>,
 }
 
 impl Shortcut {

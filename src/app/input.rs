@@ -125,40 +125,46 @@ impl InputHandler {
                     touch::Event::FingerPressed { id, position} => {
                         self.finger_presses.push((id.0, *position, Instant::now()));
                         self.timer_start();
+
+                        // todo: if gesture has started and multiple fingers pressed, cancel the gesture.
+                        // todo: then if multiple fingers pressed we want to move the window instead
+                           
+                        // Check for multiple finger presses
+                        if self.finger_presses.len() >= 2 {
+                            // Get the timestamps of the two most recent finger presses
+                            let (t1, t2) = {
+                                let mut timestamps = self.finger_presses.iter().map(|(_, _, t)| t).collect::<Vec<_>>();
+                                timestamps.sort();
+                                (timestamps[0], timestamps[1])
+                            };
+
+                            // Check if the delay between the two finger presses is within a certain threshold
+                            if t2.duration_since(*t1).as_millis() < 200 { // 200ms threshold
+                                // Handle the multiple finger press event
+                                info!("Multiple finger press detected!");
+                            }
+                        }
+
+                        return gesture_handler.start();
                     }
                     touch::Event::FingerMoved { id, position} => {
                         self.timer_end();
-
+                        
                         if let Some((_, _, _)) = self.finger_presses.iter_mut().find(|(fid, _, _)| *fid == id.0) {
                             if id.0 == 1 {
                                 info!("Finger 1 moved to: {position}");
                             }
                         }
+                        return gesture_handler.append(*position);
                     }
                     touch::Event::FingerLifted { id, ..} | touch::Event::FingerLost { id, ..} => {
                         self.finger_presses.retain(|(fid, _, _)| *fid != id.0);
+                        return gesture_handler.end();
                         // todo check for long press single finger
                         // todo check fo release of second finger - right click
                     }
                     //_ => {}
                 }
-
-                // Check for multiple finger presses
-                if self.finger_presses.len() >= 2 {
-                    // Get the timestamps of the two most recent finger presses
-                    let (t1, t2) = {
-                        let mut timestamps = self.finger_presses.iter().map(|(_, _, t)| t).collect::<Vec<_>>();
-                        timestamps.sort();
-                        (timestamps[0], timestamps[1])
-                    };
-
-                    // Check if the delay between the two finger presses is within a certain threshold
-                    if t2.duration_since(*t1).as_millis() < 200 { // 200ms threshold
-                        // Handle the multiple finger press event
-                        info!("Multiple finger press detected!");
-                    }
-                }
-                Task::none()
             },
             _ => Task::none(),
         }

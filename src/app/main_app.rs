@@ -97,7 +97,7 @@ impl MainApp {
 
     pub fn style(&self, theme: &iced::Theme) -> iced_layershell::Appearance {
         iced_layershell::Appearance {
-            background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.9),
+            background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.95),
             text_color: theme.palette().text,
         }
     }

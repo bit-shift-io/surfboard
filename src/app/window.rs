@@ -95,10 +95,10 @@ impl WindowHandler {
 
         // calulate the difference
         let diff = self.move_start.unwrap() - position;
-        info!("diff: {:?} {:?}", -diff.x as i32, diff.y as i32);
+        info!("diff: {:?} {:?}", -diff.x as i32, -diff.y as i32);
 
         // calculate for the margin change
-        let y = diff.y as i32 + self.margin.2;
+        let y = -diff.y as i32 + self.margin.2;
         let x = -diff.x as i32 + self.margin.3;
 
         //info!("mar: {:?} {:?}", x as i32, y as i32);
@@ -110,7 +110,7 @@ impl WindowHandler {
         self.margin.2 = y;
         self.margin.3 = x;
         info!("mar: {:?} {:?}", x as i32, y as i32);
-        return Task::done(main_app::Message::MarginChange((0, 0, y, x)))
+        return Task::done(main_app::Message::MarginChange((y, 0, 0, x)))
     }
 }
 

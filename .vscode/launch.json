@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'macrokey'",
+            "name": "Debug executable 'surfboard'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=macrokey",
-                    "--package=macrokey"
+                    "--bin=surfboard",
+                    "--package=surfboard"
                 ],
                 "filter": {
-                    "name": "macrokey",
+                    "name": "surfboard",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'macrokey'",
+            "name": "Debug unit tests in executable 'surfboard'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=macrokey",
-                    "--package=macrokey"
+                    "--bin=surfboard",
+                    "--package=surfboard"
                 ],
                 "filter": {
-                    "name": "macrokey",
+                    "name": "surfboard",
                     "kind": "bin"
                 }
             },
