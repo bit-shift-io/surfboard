@@ -66,6 +66,7 @@ pub struct GestureData {
     pub point: Point,
     pub instant: Instant,
     pub tangent: Point,
+    pub normal: Point,
 }
 
 
@@ -181,21 +182,53 @@ impl GestureHandler {
                 }
             }
 
-            // calc tangent vector of previous point
+            
             if length > 2 {
+                // calc better tangent & normal of previous point
                 let n2 = gesture.buffer[length - 2];
-                let tangent = Point::new(
+                gesture.buffer[length - 1].tangent = Point::new(
                     (position.x - n2.point.x) * CONTROL_POINT_SCALE,
                     (position.y - n2.point.y) * CONTROL_POINT_SCALE,
                 );
-                gesture.buffer[length - 1].tangent = tangent;
+
+                let normal = Point::new(
+                    -(position.y - n2.point.y),
+                    position.x - n2.point.x,
+                );
+                gesture.buffer[length - 1].normal = functions::normalize_point(normal); // normalized
             }
+
+
+            let tangent = if length > 1 {
+                // calc tangent & normal of the new point
+                let n1 = gesture.buffer[length - 1];
+                Point::new(
+                    (position.x - n1.point.x) * CONTROL_POINT_SCALE,
+                    (position.y - n1.point.y) * CONTROL_POINT_SCALE,
+                ) // not normalised as we want to include the spacing between points
+            } else {
+                Point::new(0.0, 0.0)
+            };
+
+            
+            let normal = if length > 1 {
+                // calc the normal vector with the previous point
+                let n1 = gesture.buffer[length - 1];
+                let normal = Point::new(
+                    -(position.y - n1.point.y),
+                    position.x - n1.point.x,
+                );
+                functions::normalize_point(normal) // normalized
+            } else {
+                Point::new(0.0, 0.0)
+            };
 
             // update this point
             gesture.buffer.push(GestureData {
                 point: position,
                 instant: Instant::now(),
-                tangent: Point::new(0.0, 0.0),
+                tangent,
+                normal,
             });
         }
         Task::none()
@@ -289,7 +322,7 @@ impl<'a> GestureView<'a> {
 
             prev_point = next_point;
 
-            frame = self.segment_style(frame, &path, time_elapsed);
+            self.segment_style(&mut frame, &path, time_elapsed);
         }
         frame
     }
@@ -341,13 +374,13 @@ impl<'a> GestureView<'a> {
             prev_point = current_point;
             prev_tangent = current_tangent;
 
-            frame = self.segment_style(frame, &path, time_elapsed);
+            self.segment_style(&mut frame, &path, time_elapsed);
         }
         frame
     }
 
 
-    pub fn segment_style(&self, mut frame: Frame, path: &Path, time_elapsed: u128) -> Frame {
+    pub fn segment_style(&self, frame: &mut Frame, path: &Path, time_elapsed: u128) {
           // Calculate fade progress using integer math for time_elapsed and fade_duration
         // Calculate width and opacity based on progress
         let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
@@ -364,7 +397,67 @@ impl<'a> GestureView<'a> {
                 ..Default::default()
             },
         );
-        frame
+    }
+
+    /// Draw a single point for debug
+    /// Edit frame in place by having the &mut on the type instead of the variable
+    fn draw_point(&self, frame: &mut Frame, point: Point) {
+        // We create a `Path` representing a simple circle
+        let circle = Path::circle(point, 2.0);
+        // And fill it with some color
+        frame.fill(&circle, Color::WHITE);
+    }
+
+    /// Draw the gesture using the mesh method.
+    fn draw_mesh_method(&self, gesture: &Gesture, mut frame: &mut Frame) {
+        // points are all stored in gesture.buffer, which is a Vector of GestureData {Point, Instant}
+        let now = Instant::now();
+        let mut prev_point = gesture.buffer.last().unwrap().point;
+        let mut prev_normal = gesture.buffer.last().unwrap().normal;
+        let mut prev_tangent = gesture.buffer.last().unwrap().tangent;
+
+        for (_i, data) in gesture.buffer.iter().enumerate().rev() {
+            // return if gesture is older than FADE_DURATION
+            let time_elapsed = now.duration_since(data.instant).as_millis();
+            if time_elapsed > FADE_DURATION {
+                return;
+            }
+
+            // draw curve
+            let current_point = data.point;
+            let current_tangent = data.tangent;
+            let current_normal = data.normal;
+
+            // draw mesh from previous to the current point
+   
+            // Calculate control points using the previous tangent and the current tangent
+            let prev_control = Point::new(
+                prev_point.x - prev_tangent.x, // * CONTROL_POINT_PERCENT,
+                prev_point.y - prev_tangent.y, // * CONTROL_POINT_PERCENT,
+            );
+
+            // calculate new tangent for the end of the segment
+            let current_control = Point::new(
+                current_point.x + current_tangent.x, // * CONTROL_POINT_PERCENT,
+                current_point.y + current_tangent.y, // * CONTROL_POINT_PERCENT,
+            );
+
+            // debug
+            //info!("{}, {} | {}, {}", prev_point, prev_normal, current_point, current_normal);
+            self.draw_point(&mut frame, current_point);
+
+
+            let path = Path::new(|builder| {
+                builder.move_to(prev_point); // first point
+                builder.bezier_curve_to(prev_control, current_control, current_point);
+            });
+
+            prev_point = current_point;
+            prev_tangent = current_tangent;
+            prev_normal = current_normal;
+
+            self.segment_style(&mut frame, &path, time_elapsed);
+        }
     }
 
 
@@ -384,10 +477,11 @@ impl<'a, Message> Program<Message> for GestureView<'a> {
         //info!("gesture draw");
         let mut frame = Frame::new(renderer, bounds.size());
 
+
         // draw all gestures
         for gesture in self.handler.get_all_gestures().iter() {
-            if gesture.buffer.len() > 2 {
-                frame = self.draw_segment_method(gesture, frame);
+            if gesture.buffer.len() > 1 {
+                self.draw_mesh_method(gesture, &mut frame);
             }
         }
 

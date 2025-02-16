@@ -42,3 +42,13 @@ pub fn radians_to_degrees(radians: f64) -> f64 {
     use std::f64::consts::PI;
     radians * 180.0 / PI
 }
+
+/// Normalises a point to have a magnitude of 1
+pub fn normalize_point(point: Point) -> Point {
+    let length = (point.x.powi(2) + point.y.powi(2)).sqrt();
+    if length != 0.0 {
+        Point::new(point.x / length, point.y / length)
+    } else {
+        Point::new(0.0, 0.0)
+    }
+}

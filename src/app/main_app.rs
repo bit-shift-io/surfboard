@@ -62,7 +62,7 @@ impl MainApp {
     }
 
     pub fn view(&self) -> Element<Message> {
-        stack![self.view_handler.view(), self.gesture_handler.view(),].into()
+        stack![self.view_handler.view(), self.gesture_handler.view(),iced::Element::new(Test),].into()
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
