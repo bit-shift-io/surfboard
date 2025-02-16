@@ -65,24 +65,10 @@ impl MainApp {
         stack![self.view_handler.view(), self.gesture_handler.view(),].into()
     }
 
-    // pub fn instance() -> &'static MainApp {
-    //     static mut INSTANCE: Option<MainApp> = None;
-    //     unsafe {
-    //         if INSTANCE.is_none() {
-    //             let (app, _) = MainApp::new();
-    //             INSTANCE = Some(app);
-    //         }
-    //         INSTANCE.as_mut().unwrap()
-    //     }
-    // }
-
     pub fn update(&mut self, message: Message) -> Task<Message> {
+        //info!("message: {:?}", message);
         match message {
-            Message::IcedEvent(event) => self.input_handler.update2(
-                &event,
-                &mut self.gesture_handler,
-                &mut self.window_handler,
-            ),
+            Message::IcedEvent(event) => self.input_handler.update2(&event, &mut self.gesture_handler, &mut self.window_handler),
             Message::InputHandler(msg) => self.input_handler.update(msg),
             Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::GestureHandler(msg) => self.gesture_handler.update(msg),
@@ -108,14 +94,11 @@ impl MainApp {
 
     pub fn subscription(&self) -> Subscription<Message> {
         let main_subscription = event::listen().map(Message::IcedEvent);
-        let gesture_subscription = self
-            .gesture_handler
-            .subscription()
-            .map(Message::GestureHandler);
+        let gesture_subscription = self.gesture_handler.subscription().map(Message::GestureHandler);
         let input_subscription = self.input_handler.subscription().map(Message::InputHandler);
         Subscription::batch(vec![
             main_subscription,
-            gesture_subscription,
+            //gesture_subscription,
             input_subscription,
         ])
     }

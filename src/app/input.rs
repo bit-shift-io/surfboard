@@ -48,6 +48,7 @@ impl InputHandler {
     pub fn update<'a>(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
             Message::Tick => {
+                info!("input tick");
                 if !self.timer_enabled {
                     return Task::none()
                 }

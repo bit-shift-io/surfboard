@@ -28,6 +28,7 @@ pub fn main() -> iced_layershell::Result {
     application(MainApp::namespace, MainApp::update, MainApp::view)
         .layer_settings(MainApp::default_layer_shell(start_mode))
         .style(MainApp::style)
+        .default_text_size(iced::Pixels(18.0))
         .subscription(MainApp::subscription)
         .run_with(move || app)
 }
