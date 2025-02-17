@@ -10,7 +10,6 @@ log = "0.4.22"
 iced = "0.13.1"
 iced_layershell = "0.13.2"
 iced_graphics = "0.13.0"
-iced_renderer = "0.13.0"
 iced_runtime = "0.13.2"
 walkdir = "2.5.0"
 xdg = "2.5.2"
@@ -20,12 +19,11 @@ async-std = "1.13.0"
 
 [features]
 default = [
-    #"iced/canvas",
     "iced/advanced",
 	"iced/image",
 	"iced/svg",
     "iced/async-std",
-    ]
+]
 
 
 # bleeding edge version of egui and eframe:
