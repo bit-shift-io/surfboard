@@ -10,19 +10,12 @@ use iced::{
         widget::Tree,
         Layout, 
         Widget, 
-    }, mouse::{self, Cursor}, time::{
+    }, 
+    mouse::Cursor, 
+    time::{
         self, 
         Duration, 
         Instant,
-    }, widget::{
-        canvas::{
-            Frame, 
-            Geometry, 
-            Path, 
-            Program, 
-            Stroke
-        }, 
-        Canvas
     }, 
     Color, 
     Element, 
@@ -36,10 +29,6 @@ use iced::{
     Theme, 
     Transformation
 };
-use iced_graphics::{geometry::{
-        LineCap, 
-        LineJoin,
-    }, mesh::Indexed};
 use crate::{
     app::*,
     utils::*,
@@ -56,6 +45,7 @@ static CONTROL_POINT_SCALE: f32 = 0.3;
 #[derive(Debug, Clone)]
 pub enum Message {
     Tick,
+    UpdateHistory,
 }
 
 #[derive(Clone, Debug)]
@@ -113,13 +103,16 @@ impl GestureHandler {
                 //self.timer_enabled = false;
                 Task::none()
             }
-            _ => Task::none()
+            Message::UpdateHistory => {
+                self.update_history();
+                Task::none()
+            }
         }
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
         match self.timer_enabled {
-            true => time::every(Duration::from_millis(100)).map(|_| Message::Tick), // every function not found in iced::time?!
+            true => time::every(Duration::from_millis(FADE_DURATION as u64)).map(|_| Message::Tick), // every function not found in iced::time?!
             false => Subscription::none()
         }
     }
@@ -133,6 +126,8 @@ impl GestureHandler {
     }
 
     pub fn update_history(&mut self) {
+        // todo: need to set a timer for lifetime duration after the gesture ends
+        // then clear all the history
         // loop through history and remove expired gestures if end_instant is older than FADE_DURATION
         let now = Instant::now();
         self.history.retain(|gesture| {
@@ -148,13 +143,6 @@ impl GestureHandler {
         iced::Element::new(MeshRibbon::new(self))
             .map(|message| main_app::Message::GestureHandler(message))
             .into()
-        //MeshRibbon::new(&self).into()
-        //Element::new()
-        // iced::Element::new(MeshRibbon)
-        // Canvas::new(GestureView::new(self))
-        //     .width(Length::Fill)
-        //     .height(Length::Fill)
-        //     .into()
     }
 
     pub fn start(&mut self) -> Task<main_app::Message> {
@@ -167,9 +155,13 @@ impl GestureHandler {
     }
 
     pub fn end(&mut self) -> Task<main_app::Message> {
+        let return_task = Task::perform(async {
+                Duration::from_millis(FADE_DURATION as u64)
+            }, |_| main_app::Message::GestureHandler(Message::UpdateHistory));
+
         if let Some(mut gesture) = self.current_gesture.take() {
             if gesture.buffer.is_empty() {
-                return Task::none()
+                return return_task
             }
             gesture.end_instant = Some(Instant::now());
             self.history.push(gesture.clone()); // clone to history
@@ -183,7 +175,7 @@ impl GestureHandler {
                 }
             }
         }
-        Task::none()
+        return_task
     }
 
     pub fn append(&mut self, position: Point) -> Task<main_app::Message> {
@@ -281,238 +273,6 @@ impl GestureHandler {
 }
 
 
-pub struct GestureView<'a> {
-    handler: &'a GestureHandler,
-}
-
-impl<'a> GestureView<'a> {
-    pub fn new(handler: &'a GestureHandler) -> Self {
-        GestureView {
-            handler,
-        }
-    }
-
-    fn draw_single_line_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
-        let path = Path::new(|builder| {
-            builder.move_to(gesture.buffer.last().unwrap().point);
-            let mut prev_point = gesture.buffer.last().unwrap().point;
-            // quadratic_curve_to
-            for data in gesture.buffer.iter().rev().skip(1) {
-                let control_point = Point::new(
-                    (prev_point.x + data.point.x) / 2.0,
-                    (prev_point.y + data.point.y) / 2.0,
-                );
-                builder.quadratic_curve_to(control_point, data.point);
-                prev_point = data.point;
-            }
-        });
-
-        frame.stroke(
-        &path,
-        Stroke {
-            style: COLOR.scale_alpha(0.5).into(),
-            width: 8.0,
-            ..Default::default()
-        });
-        frame
-    }
-
-    /// Draw the gesture using the segment method.
-    /// Create the path using a Builder closure
-    /// create the line in reverse order
-    fn draw_line_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
-        let now = Instant::now();
-        let mut prev_point = gesture.buffer.last().unwrap().point;
-
-        for (i, data) in gesture.buffer.iter().enumerate().rev() {
-            // return if gesture is older than FADE_DURATION
-            let time_elapsed = now.duration_since(data.instant).as_millis();
-            if time_elapsed > FADE_DURATION {
-                return frame;
-            }
-
-            // draw curve
-            let next_point = data.point;
-
-            let path = Path::new(|builder| {
-                builder.move_to(prev_point);
-                builder.line_to(next_point);
-            });
-
-            prev_point = next_point;
-
-            self.segment_style(&mut frame, &path, time_elapsed);
-        }
-        frame
-    }
-
-
-    /// Draw the gesture using the segment method.
-    /// Create the path using a Builder closure
-    /// create the line in reverse order
-    fn draw_segment_method(&self, gesture: &Gesture, mut frame: Frame) -> Frame {
-        // points are all stored in gesture.buffer, which is a Vector of GestureData {Point, Instant}
-        let now = Instant::now();
-        let mut prev_point = gesture.buffer.last().unwrap().point;
-        let mut prev_tangent = gesture.buffer.last().unwrap().tangent;
-
-        for (_i, data) in gesture.buffer.iter().enumerate().rev() {
-            // return if gesture is older than FADE_DURATION
-            let time_elapsed = now.duration_since(data.instant).as_millis();
-            if time_elapsed > FADE_DURATION {
-                return frame;
-            }
-
-            // prev_point & prev_control
-            // current_point & current_control
-
-            // draw curve
-            let current_point = data.point;
-            let current_tangent = data.tangent;
-            //let next_point = if i > 0 { gesture.buffer[i - 1].point } else { current_point };
-
-            // Calculate control points using the previous tangent and the current tangent
-            let prev_control = Point::new(
-                prev_point.x - prev_tangent.x, // * CONTROL_POINT_PERCENT,
-                prev_point.y - prev_tangent.y, // * CONTROL_POINT_PERCENT,
-            );
-
-            // calculate new tangent for the end of the segment
-            let current_control = Point::new(
-                current_point.x + current_tangent.x, // * CONTROL_POINT_PERCENT,
-                current_point.y + current_tangent.y, // * CONTROL_POINT_PERCENT,
-            );
-
-            //info!("{}, {}, {} | {}, {}, {}", prev_point, prev_tangent, prev_control, current_point, current_tangent, current_control);
-
-            let path = Path::new(|builder| {
-                builder.move_to(prev_point); // first point
-                builder.bezier_curve_to(prev_control, current_control, current_point);
-            });
-
-            prev_point = current_point;
-            prev_tangent = current_tangent;
-
-            self.segment_style(&mut frame, &path, time_elapsed);
-        }
-        frame
-    }
-
-
-    pub fn segment_style(&self, frame: &mut Frame, path: &Path, time_elapsed: u128) {
-          // Calculate fade progress using integer math for time_elapsed and fade_duration
-        // Calculate width and opacity based on progress
-        let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
-        let width = (MAX_WIDTH * progress).max(1.0); // Ensure width doesn't go below 1.0
-        let opacity = (MAX_OPACITY * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
-
-        frame.stroke(
-            &path,
-            Stroke {
-                style: COLOR.scale_alpha(opacity).into(),
-                width,
-                line_cap: LineCap::Butt,
-                line_join: LineJoin::Miter,
-                ..Default::default()
-            },
-        );
-    }
-
-    /// Draw a single point for debug
-    /// Edit frame in place by having the &mut on the type instead of the variable
-    fn draw_point(&self, frame: &mut Frame, point: Point) {
-        // We create a `Path` representing a simple circle
-        let circle = Path::circle(point, 2.0);
-        // And fill it with some color
-        frame.fill(&circle, Color::WHITE);
-    }
-
-    /// Draw the gesture using the mesh method.
-    fn draw_mesh_method(&self, gesture: &Gesture, mut frame: &mut Frame) {
-        // points are all stored in gesture.buffer, which is a Vector of GestureData {Point, Instant}
-        let now = Instant::now();
-        let mut prev_point = gesture.buffer.last().unwrap().point;
-        let mut prev_normal = gesture.buffer.last().unwrap().normal;
-        let mut prev_tangent = gesture.buffer.last().unwrap().tangent;
-
-        for (_i, data) in gesture.buffer.iter().enumerate().rev() {
-            // return if gesture is older than FADE_DURATION
-            let time_elapsed = now.duration_since(data.instant).as_millis();
-            if time_elapsed > FADE_DURATION {
-                return;
-            }
-
-            // draw curve
-            let current_point = data.point;
-            let current_tangent = data.tangent;
-            let current_normal = data.normal;
-
-            // draw mesh from previous to the current point
-   
-            // Calculate control points using the previous tangent and the current tangent
-            let prev_control = Point::new(
-                prev_point.x - prev_tangent.x, // * CONTROL_POINT_PERCENT,
-                prev_point.y - prev_tangent.y, // * CONTROL_POINT_PERCENT,
-            );
-
-            // calculate new tangent for the end of the segment
-            let current_control = Point::new(
-                current_point.x + current_tangent.x, // * CONTROL_POINT_PERCENT,
-                current_point.y + current_tangent.y, // * CONTROL_POINT_PERCENT,
-            );
-
-            // debug
-            //info!("{}, {} | {}, {}", prev_point, prev_normal, current_point, current_normal);
-            self.draw_point(&mut frame, current_point);
-
-
-            let path = Path::new(|builder| {
-                builder.move_to(prev_point); // first point
-                builder.bezier_curve_to(prev_control, current_control, current_point);
-            });
-
-            prev_point = current_point;
-            prev_tangent = current_tangent;
-            prev_normal = current_normal;
-
-            self.segment_style(&mut frame, &path, time_elapsed);
-        }
-    }
-
-
-}
-
-impl<'a, Message> Program<Message> for GestureView<'a> {
-    type State = ();
-
-    fn draw(
-        &self,
-        _state: &Self::State,
-        renderer: &Renderer,
-        _theme: &Theme,
-        bounds: Rectangle,
-        _cursor: mouse::Cursor,
-    ) -> Vec<Geometry> {
-        //info!("gesture draw");
-        let mut frame = Frame::new(renderer, bounds.size());
-
-
-        // draw all gestures
-        for gesture in self.handler.get_all_gestures().iter() {
-            if gesture.buffer.len() > 1 {
-                self.draw_mesh_method(gesture, &mut frame);
-            }
-        }
-
-        vec![frame.into_geometry()]
-    }
-}
-
-
-
-
-// https://github.com/generic-daw/generic-daw/blob/main/generic_daw_gui/src/widget/audio_clip.rs
-
 
 pub struct MeshRibbon<'a> {
     handler: &'a GestureHandler,
@@ -525,11 +285,17 @@ impl<'a> MeshRibbon<'a> {
         }
     }
 
+    /// Helper for drawing a vertex as a point
+    fn draw_vertex(&self, renderer: &mut Renderer, vertex: SolidVertex2D) {
+        self.draw_point(renderer, vertex.position.into(), vertex.color.components().into())
+    }
+
+
     /// Draw a single point for debug
     /// Edit frame in place by having the &mut on the type instead of the variable
-    fn draw_point(&self, renderer: &mut Renderer, point: Point) {
+    fn draw_point(&self, renderer: &mut Renderer, point: Point, color: Color) {
         let half_size = 5.0 * 0.5;
-        let color = color::pack(Color::from_rgba(1.0, 0.0, 0.0, 0.5));
+        let color = color::pack(color);
         let mesh = Mesh::Solid {
             buffers: mesh::Indexed {
                 vertices: vec![
@@ -582,24 +348,31 @@ impl<'a> MeshRibbon<'a> {
             .rev()
             .collect();
 
+        if points.len() < 2 {
+            return;
+        }
+
         // generate verteces for the width of the ribbon
         let vertices = points
             .iter()
             .enumerate()
             .rev()
-            .flat_map(|(i, data)| {
+            .flat_map(|(_i, data)| {
                 let time_elapsed = now.duration_since(data.instant).as_millis();
                 let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
                 let width = (MAX_WIDTH * progress).max(1.0); // Ensure width doesn't go below 1.0
                 let opacity = (MAX_OPACITY * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
                 let color = color::pack(COLOR.scale_alpha(opacity));
+                let half_normal = functions::multiply_point(data.normal, width * 0.5);
+                let left = functions::add_point(data.point, half_normal);
+                let right = functions::add_point(data.point, functions::invert_point(half_normal));
                 [
                     SolidVertex2D {
-                        position: [1.0, 1.0],
+                        position: left.into(),
                         color,
                     },
                     SolidVertex2D {
-                        position: [1.0, 1.0],
+                        position: right.into(),
                         color,
                     },
                 ]
@@ -607,28 +380,25 @@ impl<'a> MeshRibbon<'a> {
             .collect::<Vec<_>>();
 
             
-        // if vertices.len() < 3 {
-        //     // the triangles
-        //     let indices = (0..vertices.len() as u32 - 2)
-        //     .flat_map(|i| [i, i + 1, i + 2])
-        //     .collect();
+        // the triangles
+        let indices = (0..vertices.len() as u32 - 2)
+            .flat_map(|i| [i, i + 1, i + 2])
+            .collect();
 
-        //     // the mesh
-        //     let mesh = Mesh::Solid {
-        //     buffers: Indexed { vertices, indices },
-        //     transformation: Transformation::IDENTITY,
-        //     clip_bounds: *viewport,
-        //     };
+        // the mesh
+        let mesh = Mesh::Solid {
+            buffers: mesh::Indexed { vertices, indices },
+            transformation: Transformation::IDENTITY,
+            clip_bounds: *viewport,
+        };
 
-        //     // draw the mesh
-        //     renderer.draw_mesh(mesh);
+        // draw the mesh
+        renderer.draw_mesh(mesh);
+
+        // // debug draw
+        // for point in vertices {
+        //     self.draw_vertex(renderer, point);
         // }
-        
-
-        // debug draw
-        for data in points {
-            self.draw_point(renderer, data.point);
-        }
 
     }
 }
@@ -643,8 +413,6 @@ impl<'a> Widget<Message, Theme, Renderer> for MeshRibbon<'a> {
     fn layout(&self, _tree: &mut Tree, _renderer: &Renderer, limits: &Limits) -> Node {
         Node::new(limits.max())
     }
-
-    // https://github.com/generic-daw/generic-daw/blob/main/generic_daw_gui/src/widget/audio_clip.rs
 
     fn draw(
         &self,
@@ -662,44 +430,5 @@ impl<'a> Widget<Message, Theme, Renderer> for MeshRibbon<'a> {
                 self.draw_mesh(gesture, renderer, viewport);
             }
         }
-
-        // let mesh2 = Mesh::Solid {
-        //     buffers: mesh::Indexed {
-        //         vertices: vec![
-        //             SolidVertex2D {
-        //                 position: [0.0, 100.0],
-        //                 color: color::pack(Color::WHITE),
-        //             },
-        //             SolidVertex2D {
-        //                 position: [0.0, 200.0],
-        //                 color: color::pack(Color::WHITE),
-        //             },
-        //             SolidVertex2D {
-        //                 position: [100.0, 200.0],
-        //                 color: color::pack(theme.extended_palette().secondary.base.text),
-        //             },
-
-
-        //             SolidVertex2D {
-        //                 position: [100.0, 100.0],
-        //                 color: color::pack(theme.extended_palette().secondary.base.text),
-        //             },
-        //         ],
-        //         indices: vec![
-        //             0, 1, 2, // First triangle: Top-left, Bottom-left, Bottom-right
-        //             0, 2, 3, // Second triangle: Top-left, Bottom-right, Top-right
-        //         ],
-        //     },
-        //     transformation: Transformation::IDENTITY,
-        //     clip_bounds: Rectangle {
-        //         x: 0.0,
-        //         y: 100.0,
-        //         width: 100.0,
-        //         height: 100.0,
-        //     },
-        // };
-
-        // renderer.draw_mesh(mesh2);
-        
     }
 }

@@ -52,3 +52,19 @@ pub fn normalize_point(point: Point) -> Point {
         Point::new(0.0, 0.0)
     }
 }
+
+
+/// Multiply a point by a scalar
+pub fn multiply_point(point: Point, scalar: f32) -> Point {
+    Point::new(point.x * scalar, point.y * scalar)
+}
+
+// Add 2 points
+pub fn add_point(a: Point, b: Point) -> Point {
+    Point::new(a.x + b.x, a.y + b.y)
+}
+
+// Invert point
+pub fn invert_point(point: Point) -> Point {
+    Point::new(-point.x, -point.y)
+}
