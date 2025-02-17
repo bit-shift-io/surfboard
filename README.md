@@ -35,3 +35,7 @@ https://github.com/airstrike/iced_receipts/tree/master
 https://stackoverflow.com/questions/69352653/how-to-create-a-simple-parent-children-structure-with-the-plain-references
 
 https://users.rust-lang.org/t/building-c-like-self-registrering-factory-in-rust/14146
+
+https://github.com/FleksySDK/VirtualKeyboardSDK/tree/main
+
+https://www.fleksy.com/blog/how-swipe-typing-works/

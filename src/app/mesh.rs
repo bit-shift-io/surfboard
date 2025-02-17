@@ -14,6 +14,7 @@ use iced::{
 
 use super::main_app::Message;
 
+// https://github.com/generic-daw/generic-daw/blob/main/generic_daw_gui/src/widget/audio_clip.rs
 pub struct Test;
 
 impl Widget<Message, Theme, Renderer> for Test {
@@ -46,6 +47,8 @@ impl Widget<Message, Theme, Renderer> for Test {
     // }
 
 
+    // https://github.com/generic-daw/generic-daw/blob/main/generic_daw_gui/src/widget/audio_clip.rs
+
     fn draw(
         &self,
         _tree: &Tree,
@@ -56,33 +59,7 @@ impl Widget<Message, Theme, Renderer> for Test {
         _cursor: Cursor,
         _viewport: &Rectangle,
     ) {
-        let mesh1 = Mesh::Solid {
-            buffers: mesh::Indexed {
-                vertices: vec![
-                    SolidVertex2D {
-                        position: [0.0, 0.0],
-                        color: color::pack(Color::WHITE),
 
-                    },
-                    SolidVertex2D {
-                        position: [0.0, 100.0],
-                        color: color::pack(Color::WHITE),
-                    },
-                    SolidVertex2D {
-                        position: [100.0, 100.0],
-                        color: color::pack(Color::WHITE),
-                    },
-                ],
-                indices: vec![0, 1, 2],
-            },
-            transformation: Transformation::IDENTITY,
-            clip_bounds: Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 100.0,
-                height: 0.9999999,
-            },
-        };
 
         let mesh2 = Mesh::Solid {
             buffers: mesh::Indexed {
@@ -99,8 +76,17 @@ impl Widget<Message, Theme, Renderer> for Test {
                         position: [100.0, 200.0],
                         color: color::pack(theme.extended_palette().secondary.base.text),
                     },
+
+
+                    SolidVertex2D {
+                        position: [100.0, 100.0],
+                        color: color::pack(theme.extended_palette().secondary.base.text),
+                    },
                 ],
-                indices: vec![0, 1, 2],
+                indices: vec![
+                    0, 1, 2, // First triangle: Top-left, Bottom-left, Bottom-right
+                    0, 2, 3, // Second triangle: Top-left, Bottom-right, Top-right
+                ],
             },
             transformation: Transformation::IDENTITY,
             clip_bounds: Rectangle {
@@ -111,9 +97,10 @@ impl Widget<Message, Theme, Renderer> for Test {
             },
         };
 
+
         // draw calls
         
-        renderer.draw_mesh(mesh1);
+        //renderer.draw_mesh(mesh1);
         renderer.draw_mesh(mesh2);
         
     }
