@@ -149,9 +149,9 @@ impl ViewHandler {
         self.views.iter_mut().find(|view| view.class() == self.current_view).expect("No matching view found")
     }
 
-    pub fn all_class(&self) -> Vec<View> {
-        self.views.iter().map(|view| view.class()).collect()
-    }
+    // pub fn all_class(&self) -> Vec<View> {
+    //     self.views.iter().map(|view| view.class()).collect()
+    // }
 
     // pub fn collect_as_string(&self) -> Vec<&str> {
     //     self.views.iter().map(|view| view.name()).collect()

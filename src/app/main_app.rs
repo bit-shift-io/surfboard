@@ -95,7 +95,6 @@ impl MainApp {
 
     pub fn subscription(&self) -> Subscription<Message> {
         let main_subscription = event::listen().map(Message::IcedEvent);
-        let gesture_subscription = self.gesture_handler.subscription().map(Message::GestureHandler);
         let input_subscription = self.input_handler.subscription().map(Message::InputHandler);
         Subscription::batch(vec![
             main_subscription,

@@ -14,7 +14,7 @@ pub struct Shortcut {
 
 impl Shortcut {
     pub fn new(name: String, icon: &'static [u8], action: Option<String>) -> Self {
-        let icon = svg_path::set_fill(icon, String::from("White"));
+        let icon = functions::set_svg_fill(icon, String::from("White"));
         Shortcut { name, icon, action }
     }
 

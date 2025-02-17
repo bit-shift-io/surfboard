@@ -15,11 +15,12 @@ iced_runtime = "0.13.2"
 walkdir = "2.5.0"
 xdg = "2.5.2"
 pretty_ini = "0.1.8"
+async-std = "1.13.0"
 
 
 [features]
 default = [
-    "iced/canvas",
+    #"iced/canvas",
     "iced/advanced",
 	"iced/image",
 	"iced/svg",

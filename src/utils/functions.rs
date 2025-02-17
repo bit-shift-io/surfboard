@@ -68,3 +68,19 @@ pub fn add_point(a: Point, b: Point) -> Point {
 pub fn invert_point(point: Point) -> Point {
     Point::new(-point.x, -point.y)
 }
+
+
+pub fn set_svg_fill(svg_bytes: &[u8], color: String) -> &'static [u8] {
+    let mut svg = String::from_utf8_lossy(svg_bytes).to_string();
+
+    // Modify the fill attribute of the path
+    if let Some(start) = svg.find("<path") {
+        if let Some(end) = svg[start..].find("/>") {
+            let end_index = start + end;
+            svg.insert_str(end_index, &format!(r#" fill="{}""#, color).as_str());
+        }
+    }
+
+    // leak memory by storing the svg in memory
+    Box::leak(svg.into_bytes().into_boxed_slice())
+}

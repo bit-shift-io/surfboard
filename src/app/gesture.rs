@@ -13,7 +13,6 @@ use iced::{
     }, 
     mouse::Cursor, 
     time::{
-        self, 
         Duration, 
         Instant,
     }, 
@@ -24,7 +23,6 @@ use iced::{
     Rectangle, 
     Renderer, 
     Size, 
-    Subscription, 
     Task, 
     Theme, 
     Transformation
@@ -38,13 +36,11 @@ static FADE_DURATION: u128 = 800; // ms
 static ACTION_GESTURE_DURATION: u128 = 250; // ms
 static MIN_DISTANCE: f32 = 15.0; // pixels
 static MAX_WIDTH: f32 = 25.0; // Max initial width
-static MAX_OPACITY: f32 = 0.1; // Max initial opacity
+static MAX_OPACITY: f32 = 0.5; // Max initial opacity
 static COLOR: Color = Color::from_rgba(0.6, 0.8, 1.0, 1.0);
-static CONTROL_POINT_SCALE: f32 = 0.3;
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Tick,
     UpdateHistory,
 }
 
@@ -52,7 +48,6 @@ pub enum Message {
 pub struct GestureHandler {
     pub history: Vec<Gesture>,
     pub current_gesture: Option<Gesture>,
-    pub timer_enabled: bool, // for animation to complete after gesture
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -90,30 +85,15 @@ impl GestureHandler {
         GestureHandler {
             history: Vec::new(),
             current_gesture: None,
-            timer_enabled: false,
         }
     }
 
     pub fn update(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
-            Message::Tick => {
-                //self.view(); // redraw view?
-                info!("gesture tick");
-                //self.update_history();
-                //self.timer_enabled = false;
-                Task::none()
-            }
             Message::UpdateHistory => {
-                self.update_history();
+                self.clear_history();
                 Task::none()
             }
-        }
-    }
-
-    pub fn subscription(&self) -> Subscription<Message> {
-        match self.timer_enabled {
-            true => time::every(Duration::from_millis(FADE_DURATION as u64)).map(|_| Message::Tick), // every function not found in iced::time?!
-            false => Subscription::none()
         }
     }
 
@@ -125,10 +105,7 @@ impl GestureHandler {
         result
     }
 
-    pub fn update_history(&mut self) {
-        // todo: need to set a timer for lifetime duration after the gesture ends
-        // then clear all the history
-        // loop through history and remove expired gestures if end_instant is older than FADE_DURATION
+    pub fn clear_history(&mut self) {
         let now = Instant::now();
         self.history.retain(|gesture| {
             if let Some(end_instant) = gesture.end_instant {
@@ -156,8 +133,9 @@ impl GestureHandler {
 
     pub fn end(&mut self) -> Task<main_app::Message> {
         let return_task = Task::perform(async {
-                Duration::from_millis(FADE_DURATION as u64)
-            }, |_| main_app::Message::GestureHandler(Message::UpdateHistory));
+            async_std::task::sleep(Duration::from_millis(FADE_DURATION as u64 + 10)).await;
+            main_app::Message::GestureHandler(Message::UpdateHistory)
+        }, |result| result);
 
         if let Some(mut gesture) = self.current_gesture.take() {
             if gesture.buffer.is_empty() {
@@ -168,10 +146,16 @@ impl GestureHandler {
 
             match gesture.end_instant.unwrap().duration_since(gesture.start_instant.unwrap()).as_millis() {
                 duration if duration < ACTION_GESTURE_DURATION => {
-                    return self.handle_action_gesture(gesture)
+                    return Task::batch(vec![
+                        self.handle_action_gesture(gesture),
+                        return_task,
+                    ]);
                 }
                 _ => {
-                    return self.handle_view_gesture(gesture)
+                    return Task::batch(vec![
+                        self.handle_view_gesture(gesture),
+                        return_task,
+                    ]);
                 }
             }
         }
@@ -179,8 +163,6 @@ impl GestureHandler {
     }
 
     pub fn append(&mut self, position: Point) -> Task<main_app::Message> {
-        //self.update_history(); // todo: need appropriate spot for this? some kind of timer based update
-
         if let Some(gesture) = self.current_gesture.as_mut() {
             let length = gesture.buffer.len();
 
@@ -198,8 +180,8 @@ impl GestureHandler {
                 // calc better tangent & normal of previous point
                 let n2 = gesture.buffer[length - 2];
                 gesture.buffer[length - 1].tangent = Point::new(
-                    (position.x - n2.point.x) * CONTROL_POINT_SCALE,
-                    (position.y - n2.point.y) * CONTROL_POINT_SCALE,
+                    position.x - n2.point.x,
+                    position.y - n2.point.y,
                 );
 
                 let normal = Point::new(
@@ -214,8 +196,8 @@ impl GestureHandler {
                 // calc tangent & normal of the new point
                 let n1 = gesture.buffer[length - 1];
                 Point::new(
-                    (position.x - n1.point.x) * CONTROL_POINT_SCALE,
-                    (position.y - n1.point.y) * CONTROL_POINT_SCALE,
+                    position.x - n1.point.x,
+                    position.y - n1.point.y,
                 ) // not normalised as we want to include the spacing between points
             } else {
                 Point::new(0.0, 0.0)
@@ -234,7 +216,6 @@ impl GestureHandler {
                 Point::new(0.0, 0.0)
             };
 
-            // update this point
             gesture.buffer.push(GestureData {
                 point: position,
                 instant: Instant::now(),
@@ -265,7 +246,7 @@ impl GestureHandler {
         Task::done(view::Message::ActionGesture(direction)).map(main_app::Message::ViewHandler)
     }
 
-    fn handle_view_gesture(&mut self, gesture: Gesture) -> Task<main_app::Message> {
+    fn handle_view_gesture(&mut self, _gesture: Gesture) -> Task<main_app::Message> {
         // todo dictionary etc... pass to view or actionbar view
         info!("view gesture");
         Task::none()
@@ -283,54 +264,6 @@ impl<'a> MeshRibbon<'a> {
         MeshRibbon {
             handler,
         }
-    }
-
-    /// Helper for drawing a vertex as a point
-    fn draw_vertex(&self, renderer: &mut Renderer, vertex: SolidVertex2D) {
-        self.draw_point(renderer, vertex.position.into(), vertex.color.components().into())
-    }
-
-
-    /// Draw a single point for debug
-    /// Edit frame in place by having the &mut on the type instead of the variable
-    fn draw_point(&self, renderer: &mut Renderer, point: Point, color: Color) {
-        let half_size = 5.0 * 0.5;
-        let color = color::pack(color);
-        let mesh = Mesh::Solid {
-            buffers: mesh::Indexed {
-                vertices: vec![
-                    SolidVertex2D { // top left
-                        position: [point.x - half_size, point.y - half_size],
-                        color,
-                    },
-                    SolidVertex2D { // bottom left
-                        position: [point.x - half_size, point.y + half_size],
-                        color,
-                    },
-                    SolidVertex2D { // bottom right
-                        position: [point.x + half_size, point.y + half_size],
-                        color,
-                    },
-                    SolidVertex2D { // top right
-                        position: [point.x + half_size, point.y - half_size],
-                        color,
-                    },
-                ],
-                indices: vec![
-                    0, 1, 2, // First triangle: Top-left, Bottom-left, Bottom-right
-                    0, 2, 3, // Second triangle: Top-left, Bottom-right, Top-right
-                ],
-            },
-            transformation: Transformation::IDENTITY,
-            clip_bounds: Rectangle {
-                x: point.x - half_size,
-                y: point.y - half_size,
-                width: half_size * 2.0,
-                height: half_size * 2.0,
-            },
-        };
-
-        renderer.draw_mesh(mesh);
     }
 
     pub fn draw_mesh(&self, gesture: &Gesture, renderer: &mut Renderer, viewport: &Rectangle) {
