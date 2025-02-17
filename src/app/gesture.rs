@@ -1,33 +1,45 @@
 use iced::{
-    mouse, 
-    widget::{
+    advanced::{
+        graphics::{
+            color,
+            mesh::{self, Renderer as _, SolidVertex2D},
+            Mesh,
+        },
+        layout::{Limits, Node},
+        renderer::Style,
+        widget::Tree,
+        Layout, 
+        Widget, 
+    }, mouse::{self, Cursor}, time::{
+        self, 
+        Duration, 
+        Instant,
+    }, widget::{
         canvas::{
             Frame, 
             Geometry, 
             Path, 
             Program, 
             Stroke
-        }, Canvas
+        }, 
+        Canvas
     }, 
     Color, 
+    Element, 
     Length, 
     Point, 
     Rectangle, 
     Renderer, 
+    Size, 
+    Subscription, 
     Task, 
-    Theme,
-    Subscription,
-    time::{
-        self, 
-        Duration, 
-        Instant,
-    },
+    Theme, 
+    Transformation
 };
-use iced_graphics::geometry::{
+use iced_graphics::{geometry::{
         LineCap, 
         LineJoin,
-    };
-
+    }, mesh::Indexed};
 use crate::{
     app::*,
     utils::*,
@@ -132,10 +144,17 @@ impl GestureHandler {
         });
     }
 
-    pub fn view(&self) -> Canvas<GestureView<'_>, main_app::Message> {
-        Canvas::new(GestureView::new(self))
-            .width(Length::Fill)
-            .height(Length::Fill)
+    pub fn view(&self) -> Element<main_app::Message> {
+        iced::Element::new(MeshRibbon::new(self))
+            .map(|message| main_app::Message::GestureHandler(message))
+            .into()
+        //MeshRibbon::new(&self).into()
+        //Element::new()
+        // iced::Element::new(MeshRibbon)
+        // Canvas::new(GestureView::new(self))
+        //     .width(Length::Fill)
+        //     .height(Length::Fill)
+        //     .into()
     }
 
     pub fn start(&mut self) -> Task<main_app::Message> {
@@ -486,5 +505,201 @@ impl<'a, Message> Program<Message> for GestureView<'a> {
         }
 
         vec![frame.into_geometry()]
+    }
+}
+
+
+
+
+// https://github.com/generic-daw/generic-daw/blob/main/generic_daw_gui/src/widget/audio_clip.rs
+
+
+pub struct MeshRibbon<'a> {
+    handler: &'a GestureHandler,
+}
+
+impl<'a> MeshRibbon<'a> {
+    pub fn new(handler: &'a GestureHandler) -> Self {
+        MeshRibbon {
+            handler,
+        }
+    }
+
+    /// Draw a single point for debug
+    /// Edit frame in place by having the &mut on the type instead of the variable
+    fn draw_point(&self, renderer: &mut Renderer, point: Point) {
+        let half_size = 5.0 * 0.5;
+        let color = color::pack(Color::from_rgba(1.0, 0.0, 0.0, 0.5));
+        let mesh = Mesh::Solid {
+            buffers: mesh::Indexed {
+                vertices: vec![
+                    SolidVertex2D { // top left
+                        position: [point.x - half_size, point.y - half_size],
+                        color,
+                    },
+                    SolidVertex2D { // bottom left
+                        position: [point.x - half_size, point.y + half_size],
+                        color,
+                    },
+                    SolidVertex2D { // bottom right
+                        position: [point.x + half_size, point.y + half_size],
+                        color,
+                    },
+                    SolidVertex2D { // top right
+                        position: [point.x + half_size, point.y - half_size],
+                        color,
+                    },
+                ],
+                indices: vec![
+                    0, 1, 2, // First triangle: Top-left, Bottom-left, Bottom-right
+                    0, 2, 3, // Second triangle: Top-left, Bottom-right, Top-right
+                ],
+            },
+            transformation: Transformation::IDENTITY,
+            clip_bounds: Rectangle {
+                x: point.x - half_size,
+                y: point.y - half_size,
+                width: half_size * 2.0,
+                height: half_size * 2.0,
+            },
+        };
+
+        renderer.draw_mesh(mesh);
+    }
+
+    pub fn draw_mesh(&self, gesture: &Gesture, renderer: &mut Renderer, viewport: &Rectangle) {
+        // points are all stored in gesture.buffer, which is a Vector of GestureData {Point, Instant}
+        let now = Instant::now();
+
+        // collect all points that are younger than fade duration
+        // also do the reverse here
+        let points: Vec<_> = gesture.buffer
+            .iter()
+            .filter(|data| {
+                let time_elapsed = now.duration_since(data.instant).as_millis();
+                time_elapsed <= FADE_DURATION
+            })
+            .rev()
+            .collect();
+
+        // generate verteces for the width of the ribbon
+        let vertices = points
+            .iter()
+            .enumerate()
+            .rev()
+            .flat_map(|(i, data)| {
+                let time_elapsed = now.duration_since(data.instant).as_millis();
+                let progress = (FADE_DURATION - time_elapsed) as f32 / FADE_DURATION as f32;
+                let width = (MAX_WIDTH * progress).max(1.0); // Ensure width doesn't go below 1.0
+                let opacity = (MAX_OPACITY * progress).max(0.0);   // Ensure opacity doesn't go below 0.0
+                let color = color::pack(COLOR.scale_alpha(opacity));
+                [
+                    SolidVertex2D {
+                        position: [1.0, 1.0],
+                        color,
+                    },
+                    SolidVertex2D {
+                        position: [1.0, 1.0],
+                        color,
+                    },
+                ]
+            })
+            .collect::<Vec<_>>();
+
+            
+        // if vertices.len() < 3 {
+        //     // the triangles
+        //     let indices = (0..vertices.len() as u32 - 2)
+        //     .flat_map(|i| [i, i + 1, i + 2])
+        //     .collect();
+
+        //     // the mesh
+        //     let mesh = Mesh::Solid {
+        //     buffers: Indexed { vertices, indices },
+        //     transformation: Transformation::IDENTITY,
+        //     clip_bounds: *viewport,
+        //     };
+
+        //     // draw the mesh
+        //     renderer.draw_mesh(mesh);
+        // }
+        
+
+        // debug draw
+        for data in points {
+            self.draw_point(renderer, data.point);
+        }
+
+    }
+}
+
+
+impl<'a> Widget<Message, Theme, Renderer> for MeshRibbon<'a> {
+
+    fn size(&self) -> Size<Length> {
+        Size::new(Length::Fill, Length::Fill)
+    }
+
+    fn layout(&self, _tree: &mut Tree, _renderer: &Renderer, limits: &Limits) -> Node {
+        Node::new(limits.max())
+    }
+
+    // https://github.com/generic-daw/generic-daw/blob/main/generic_daw_gui/src/widget/audio_clip.rs
+
+    fn draw(
+        &self,
+        _tree: &Tree,
+        renderer: &mut Renderer,
+        _theme: &Theme,
+        _style: &Style,
+        _layout: Layout<'_>,
+        _cursor: Cursor,
+        viewport: &Rectangle,
+    ) {
+        // draw all gestures
+        for gesture in self.handler.get_all_gestures().iter() {
+            if gesture.buffer.len() > 1 {
+                self.draw_mesh(gesture, renderer, viewport);
+            }
+        }
+
+        // let mesh2 = Mesh::Solid {
+        //     buffers: mesh::Indexed {
+        //         vertices: vec![
+        //             SolidVertex2D {
+        //                 position: [0.0, 100.0],
+        //                 color: color::pack(Color::WHITE),
+        //             },
+        //             SolidVertex2D {
+        //                 position: [0.0, 200.0],
+        //                 color: color::pack(Color::WHITE),
+        //             },
+        //             SolidVertex2D {
+        //                 position: [100.0, 200.0],
+        //                 color: color::pack(theme.extended_palette().secondary.base.text),
+        //             },
+
+
+        //             SolidVertex2D {
+        //                 position: [100.0, 100.0],
+        //                 color: color::pack(theme.extended_palette().secondary.base.text),
+        //             },
+        //         ],
+        //         indices: vec![
+        //             0, 1, 2, // First triangle: Top-left, Bottom-left, Bottom-right
+        //             0, 2, 3, // Second triangle: Top-left, Bottom-right, Top-right
+        //         ],
+        //     },
+        //     transformation: Transformation::IDENTITY,
+        //     clip_bounds: Rectangle {
+        //         x: 0.0,
+        //         y: 100.0,
+        //         width: 100.0,
+        //         height: 100.0,
+        //     },
+        // };
+
+        // renderer.draw_mesh(mesh2);
+        
     }
 }
