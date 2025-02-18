@@ -1,9 +1,11 @@
 #[macro_use]
 extern crate log;
-use iced::Task;
 use iced_layershell::{
     build_pattern::application,
-    settings::{LayerShellSettings, StartMode},
+    settings::{
+        LayerShellSettings, 
+        StartMode
+    },
 };
 
 mod app;
