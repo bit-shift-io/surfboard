@@ -44,6 +44,7 @@ pub enum Message {
     UpdateHistory,
 }
 
+/// Handles the gesture ribbon.  
 #[derive(Clone, Debug)]
 pub struct GestureHandler {
     pub history: Vec<Gesture>,

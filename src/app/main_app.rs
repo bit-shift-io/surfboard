@@ -1,12 +1,26 @@
-use crate::*;
-use iced::{event, widget::stack, Color, Element, Event, Subscription, Task};
+use iced::{
+    event, 
+    widget::stack, 
+    Color, 
+    Element, 
+    Event, 
+    Subscription, 
+    Task
+};
 use iced_layershell::{
-    reexport::{Anchor, KeyboardInteractivity, Layer},
+    reexport::{
+        Anchor, 
+        KeyboardInteractivity, 
+        Layer
+    },
     to_layer_message,
 };
+use crate::*;
 
+/// The main app holds all the helpers and links everything together.  
 #[derive(Debug)]
 pub struct MainApp {
+    pub component_handler: ComponentHandler,
     pub gesture_handler: GestureHandler,
     pub window_handler: WindowHandler,
     pub input_handler: InputHandler,
@@ -22,12 +36,14 @@ pub enum Message {
     ViewHandler(view::Message),
     GestureHandler(gesture::Message),
     InputHandler(input::Message),
+    ComponentPosition(component::Message),
     None,
 }
 
 impl Default for MainApp {
     fn default() -> Self {
         Self {
+            component_handler: ComponentHandler::new(),
             gesture_handler: GestureHandler::new(),
             window_handler: WindowHandler::new(),
             input_handler: InputHandler::new(),
@@ -62,18 +78,19 @@ impl MainApp {
     }
 
     pub fn view(&self) -> Element<Message> {
-        
+        // TODO: should this be changed to use map??
         stack![self.view_handler.view(), self.gesture_handler.view()].into()
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
-        //info!("message: {:?}", message);
+        // TODO: should this be changed to use map??
         match message {
             Message::IcedEvent(event) => self.input_handler.update2(&event, &mut self.gesture_handler, &mut self.window_handler),
             Message::InputHandler(msg) => self.input_handler.update(msg),
             Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::GestureHandler(msg) => self.gesture_handler.update(msg),
             Message::ViewHandler(msg) => self.view_handler.update(msg),
+            Message::ComponentPosition(msg) => self.component_handler.update(msg),
             Message::Debug(s) => {
                 info!("{s}");
                 Task::none()
@@ -98,7 +115,6 @@ impl MainApp {
         let input_subscription = self.input_handler.subscription().map(Message::InputHandler);
         Subscription::batch(vec![
             main_subscription,
-            //gesture_subscription,
             input_subscription,
         ])
     }

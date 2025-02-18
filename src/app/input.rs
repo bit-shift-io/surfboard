@@ -25,6 +25,7 @@ pub enum Message {
     Tick,
 }
 
+/// Handles the user inputs.  
 #[derive(Clone, Debug)]
 pub struct InputHandler {
     lmouse_down: bool,

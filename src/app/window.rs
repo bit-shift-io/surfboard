@@ -2,7 +2,7 @@ use iced::{Point, Task};
 use iced_layershell::reexport::Anchor;
 use super::*;
 
-
+/// Handles all things window related.  
 #[derive(Clone, Debug)]
 pub struct WindowHandler {
     pub dock: Dock,

@@ -67,8 +67,8 @@ impl fmt::Debug for dyn ViewTrait + 'static {
     }
 }
 
-
-// todo view handler which stores history of view, and manages the action gestures, view switching, and panes
+/// Handles the views & layouts.  
+/// Todo: stores history of views, and manages the action gestures, view switching, and panes
 #[derive(Debug)]
 pub struct ViewHandler {
     pub current_view: View,
