@@ -14,6 +14,10 @@ Install `surfboard.desktop` to `/usr/share/applications`, with the path correspo
 
 Drop the rs file in the bin folder and run: `cargo run --bin example`
 
+### Target another OS
+
+Run with the command `cargo run --target x86_64-apple-ios`
+
 
 ## TODO
 * launch apps + window mode

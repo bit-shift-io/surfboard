@@ -8,13 +8,20 @@ edition = "2021"
 env_logger = "0.11.6"
 log = "0.4.22"
 iced = "0.13.1"
-iced_layershell = "0.13.2"
 iced_graphics = "0.13.0"
 iced_runtime = "0.13.2"
 walkdir = "2.5.0"
 xdg = "2.5.2"
 pretty_ini = "0.1.8"
 async-std = "1.13.0"
+
+
+[target.'cfg(any(target_os = "linux"))'.dependencies]
+#iced_layershell = "0.13.2"
+
+
+[target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
+
 
 
 [features]
@@ -26,7 +33,5 @@ default = [
 ]
 
 
-# bleeding edge version of egui and eframe:
 [patch.crates-io]
-#egui = { git = "https://github.com/emilk/egui", branch = "master" }
-#eframe = { git = "https://github.com/emilk/egui", branch = "master" }
+#iced = { git = "https://github.com/emilk/egui", branch = "master" }

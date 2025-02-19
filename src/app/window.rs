@@ -1,5 +1,5 @@
 use iced::{Point, Task};
-use iced_layershell::reexport::Anchor;
+//use iced_layershell::reexport::Anchor;
 use super::*;
 
 /// Handles all things window related.  
@@ -32,46 +32,47 @@ impl WindowHandler {
     }
 
     pub fn update(&mut self, message: window::Message) -> Task<main_app::Message> {
-        match message {
-            Message::Dock(dock) => {
-                if self.windowed {
-                    // todo need to chain commands as we need to restore the margins?
-                    return Task::done(main_app::Message::AnchorSizeChange(
-                        Anchor::Left | Anchor::Top,
-                        self.size,
-                    ))
-                }
-                self.dock = dock;
-                let size_dock = 400;
-                match dock {
-                    Dock::Left => {
-                        return Task::done(main_app::Message::AnchorSizeChange(
-                            Anchor::Left | Anchor::Top | Anchor::Bottom,
-                            (size_dock, 0),
-                        ))
-                    }
-                    Dock::Right => {
-                        return Task::done(main_app::Message::AnchorSizeChange(
-                            Anchor::Right | Anchor::Top | Anchor::Bottom,
-                            (size_dock, 0),
-                        ))
-                    }
-                    Dock::Bottom => {
-                        return Task::done(main_app::Message::AnchorSizeChange(
-                            Anchor::Bottom | Anchor::Left | Anchor::Right,
-                            (0, size_dock),
-                        ))
-                    }
-                    Dock::Top => {
-                        return Task::done(main_app::Message::AnchorSizeChange(
-                            Anchor::Top | Anchor::Left | Anchor::Right,
-                            (0, size_dock),
-                        ))
-                    }
-                }
-            }
-            //_ => Task::none()
-        }
+        // match message {
+        //     Message::Dock(dock) => {
+        //         if self.windowed {
+        //             // todo need to chain commands as we need to restore the margins?
+        //             return Task::done(main_app::Message::AnchorSizeChange(
+        //                 Anchor::Left | Anchor::Top,
+        //                 self.size,
+        //             ))
+        //         }
+        //         self.dock = dock;
+        //         let size_dock = 400;
+        //         match dock {
+        //             Dock::Left => {
+        //                 return Task::done(main_app::Message::AnchorSizeChange(
+        //                     Anchor::Left | Anchor::Top | Anchor::Bottom,
+        //                     (size_dock, 0),
+        //                 ))
+        //             }
+        //             Dock::Right => {
+        //                 return Task::done(main_app::Message::AnchorSizeChange(
+        //                     Anchor::Right | Anchor::Top | Anchor::Bottom,
+        //                     (size_dock, 0),
+        //                 ))
+        //             }
+        //             Dock::Bottom => {
+        //                 return Task::done(main_app::Message::AnchorSizeChange(
+        //                     Anchor::Bottom | Anchor::Left | Anchor::Right,
+        //                     (0, size_dock),
+        //                 ))
+        //             }
+        //             Dock::Top => {
+        //                 return Task::done(main_app::Message::AnchorSizeChange(
+        //                     Anchor::Top | Anchor::Left | Anchor::Right,
+        //                     (0, size_dock),
+        //                 ))
+        //             }
+        //         }
+        //     }
+        //     //_ => Task::none()
+        // }
+        Task::none()
     }
 
 
@@ -110,7 +111,8 @@ impl WindowHandler {
         self.margin.2 = y;
         self.margin.3 = x;
         info!("mar: {:?} {:?}", x as i32, y as i32);
-        return Task::done(main_app::Message::MarginChange((y, 0, 0, x)))
+        //return Task::done(main_app::Message::MarginChange((y, 0, 0, x)))
+        Task::none()
     }
 }
 

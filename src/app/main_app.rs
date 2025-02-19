@@ -1,20 +1,14 @@
 use iced::{
-    event, 
-    widget::stack, 
-    Color, 
-    Element, 
-    Event, 
-    Subscription, 
-    Task
+    daemon::Appearance, event, widget::stack, Color, Element, Event, Subscription, Task
 };
-use iced_layershell::{
-    reexport::{
-        Anchor, 
-        KeyboardInteractivity, 
-        Layer
-    },
-    to_layer_message,
-};
+// use iced_layershell::{
+//     reexport::{
+//         Anchor, 
+//         KeyboardInteractivity, 
+//         Layer
+//     },
+//     to_layer_message,
+// };
 use crate::*;
 
 /// The main app holds all the helpers and links everything together.  
@@ -27,7 +21,7 @@ pub struct MainApp {
     pub view_handler: ViewHandler,
 }
 
-#[to_layer_message] // used for extra iced messages
+//#[to_layer_message] // used for extra iced messages
 #[derive(Debug, Clone)]
 pub enum Message {
     Debug(String),
@@ -53,20 +47,20 @@ impl Default for MainApp {
 }
 
 impl MainApp {
-    pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
-        let window_handler = WindowHandler::new();
-        // default free window mode
-        LayerShellSettings {
-            anchor: Anchor::Top | Anchor::Left, //| Anchor::Right,
-            layer: Layer::Top,                  // Layer::Overlay if need to go the max
-            exclusive_zone: -1,
-            size: Some(window_handler.size), //None,
-            margin: window_handler.margin,
-            keyboard_interactivity: KeyboardInteractivity::OnDemand,
-            events_transparent: false,
-            start_mode: StartMode::default(),
-        }
-    }
+    // pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
+    //     let window_handler = WindowHandler::new();
+    //     // default free window mode
+    //     LayerShellSettings {
+    //         anchor: Anchor::Top | Anchor::Left, //| Anchor::Right,
+    //         layer: Layer::Top,                  // Layer::Overlay if need to go the max
+    //         exclusive_zone: -1,
+    //         size: Some(window_handler.size), //None,
+    //         margin: window_handler.margin,
+    //         keyboard_interactivity: KeyboardInteractivity::OnDemand,
+    //         events_transparent: false,
+    //         start_mode: StartMode::default(),
+    //     }
+    // }
 
     pub fn new() -> (Self, Task<Message>) {
         let default = Self::default();
@@ -99,12 +93,19 @@ impl MainApp {
         }
     }
 
-    pub fn style(&self, theme: &iced::Theme) -> iced_layershell::Appearance {
-        iced_layershell::Appearance {
+    pub fn style(&self, theme: &iced::Theme) -> Appearance {
+        Appearance {
             background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.95),
             text_color: theme.palette().text,
         }
     }
+
+    // pub fn style(&self, theme: &iced::Theme) -> iced_layershell::Appearance {
+    //     iced_layershell::Appearance {
+    //         background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.95),
+    //         text_color: theme.palette().text,
+    //     }
+    // }
 
     pub fn namespace(&self) -> String {
         String::from("surfboard")
