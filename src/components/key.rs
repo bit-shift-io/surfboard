@@ -182,6 +182,35 @@ where
         )
     }
 
+    /*
+    // todo: Brons help, how do i get some sort of animation loop here for a key?
+    // for animation: https://github.com/iced-rs/iced/blob/master/examples/loading_spinners/src/circular.rs
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        _layout: Layout<'_>,
+        _cursor: mouse::Cursor,
+        _renderer: &Renderer,
+        _clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        _viewport: &Rectangle,
+    ) {
+        /* 
+        let state = tree.state.downcast_mut::<State>();
+
+        if let Event::Window(window::Event::RedrawRequested(now)) = event {
+            state.animation = state.animation.timed_transition(
+                self.cycle_duration,
+                self.rotation_duration,
+                *now,
+            );
+
+            state.cache.clear();
+            shell.request_redraw();
+        }*/
+    }*/
+
     fn draw(
         &self,
         state: &Tree, // tree
