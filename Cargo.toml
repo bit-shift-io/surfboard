@@ -17,7 +17,7 @@ async-std = "1.13.0"
 
 
 [target.'cfg(any(target_os = "linux"))'.dependencies]
-#iced_layershell = "0.13.2"
+iced_layershell = "0.13.2"
 
 
 [target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]

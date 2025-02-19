@@ -1,15 +1,41 @@
 use iced::{
-    daemon::Appearance, event, widget::stack, Color, Element, Event, Subscription, Task
+    daemon::Appearance, 
+    event, 
+    widget::stack, 
+    Color, 
+    Element, 
+    Event, 
+    Subscription, 
+    Task
 };
-// use iced_layershell::{
-//     reexport::{
-//         Anchor, 
-//         KeyboardInteractivity, 
-//         Layer
-//     },
-//     to_layer_message,
-// };
+
+#[cfg(target_os = "linux")]
+use iced_layershell::{
+    reexport::{
+        Anchor, 
+        KeyboardInteractivity, 
+        Layer
+    },
+    to_layer_message,
+};
+
 use crate::*;
+
+
+to_layershell_message! { // extra layershell messages
+#[derive(Debug, Clone)]
+pub enum Message {
+    Debug(String),
+    IcedEvent(Event),
+    WindowHandler(window::Message),
+    ViewHandler(view::Message),
+    GestureHandler(gesture::Message),
+    InputHandler(input::Message),
+    ComponentHandler(component::Message),
+    None,
+}
+}
+
 
 /// The main app holds all the helpers and links everything together.  
 #[derive(Debug)]
@@ -21,18 +47,6 @@ pub struct MainApp {
     pub view_handler: ViewHandler,
 }
 
-//#[to_layer_message] // used for extra iced messages
-#[derive(Debug, Clone)]
-pub enum Message {
-    Debug(String),
-    IcedEvent(Event),
-    WindowHandler(window::Message),
-    ViewHandler(view::Message),
-    GestureHandler(gesture::Message),
-    InputHandler(input::Message),
-    ComponentPosition(component::Message),
-    None,
-}
 
 impl Default for MainApp {
     fn default() -> Self {
@@ -47,20 +61,7 @@ impl Default for MainApp {
 }
 
 impl MainApp {
-    // pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
-    //     let window_handler = WindowHandler::new();
-    //     // default free window mode
-    //     LayerShellSettings {
-    //         anchor: Anchor::Top | Anchor::Left, //| Anchor::Right,
-    //         layer: Layer::Top,                  // Layer::Overlay if need to go the max
-    //         exclusive_zone: -1,
-    //         size: Some(window_handler.size), //None,
-    //         margin: window_handler.margin,
-    //         keyboard_interactivity: KeyboardInteractivity::OnDemand,
-    //         events_transparent: false,
-    //         start_mode: StartMode::default(),
-    //     }
-    // }
+  
     pub fn window_size() -> iced::Size {
         let window_handler = WindowHandler::new();
         iced::Size::new(window_handler.size.0 as f32, window_handler.size.1 as f32)
@@ -88,7 +89,7 @@ impl MainApp {
             Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::GestureHandler(msg) => self.gesture_handler.update(msg),
             Message::ViewHandler(msg) => self.view_handler.update(msg),
-            Message::ComponentPosition(msg) => self.component_handler.update(msg),
+            Message::ComponentHandler(msg) => self.component_handler.update(msg),
             Message::Debug(s) => {
                 info!("{s}");
                 Task::none()
@@ -104,12 +105,6 @@ impl MainApp {
         }
     }
 
-    // pub fn style(&self, theme: &iced::Theme) -> iced_layershell::Appearance {
-    //     iced_layershell::Appearance {
-    //         background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.95),
-    //         text_color: theme.palette().text,
-    //     }
-    // }
 
     pub fn namespace(&self) -> String {
         String::from("surfboard")
@@ -122,5 +117,31 @@ impl MainApp {
             main_subscription,
             input_subscription,
         ])
+    }
+}
+
+
+#[cfg(target_os = "linux")]
+impl MainApp {
+    pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
+        let window_handler = WindowHandler::new();
+        // default free window mode
+        LayerShellSettings {
+            anchor: Anchor::Top | Anchor::Left, //| Anchor::Right,
+            layer: Layer::Top,                  // Layer::Overlay if need to go the max
+            exclusive_zone: -1,
+            size: Some(window_handler.size), //None,
+            margin: window_handler.margin,
+            keyboard_interactivity: KeyboardInteractivity::OnDemand,
+            events_transparent: false,
+            start_mode: StartMode::default(),
+        }
+    }
+
+    pub fn style_layershell(&self, theme: &iced::Theme) -> iced_layershell::Appearance {
+        iced_layershell::Appearance {
+            background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.95),
+            text_color: theme.palette().text,
+        }
     }
 }
