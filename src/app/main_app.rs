@@ -61,6 +61,10 @@ impl MainApp {
     //         start_mode: StartMode::default(),
     //     }
     // }
+    pub fn window_size() -> iced::Size {
+        let window_handler = WindowHandler::new();
+        iced::Size::new(window_handler.size.0 as f32, window_handler.size.1 as f32)
+    }
 
     pub fn new() -> (Self, Task<Message>) {
         let default = Self::default();

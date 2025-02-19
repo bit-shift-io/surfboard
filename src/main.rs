@@ -35,6 +35,7 @@ pub fn start_iced() -> iced::Result {
     app.0.init();
 
     iced::application(MainApp::namespace, MainApp::update, MainApp::view)
+        .window_size(MainApp::window_size())
         .style(MainApp::style)
         .subscription(MainApp::subscription)
         .run_with(move || app)
