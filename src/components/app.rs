@@ -124,20 +124,32 @@ fn get_icon_path(iconname: &str) -> Option<PathBuf> {
 }
 
 
-pub fn load_ini(file_path: &str) -> ini::Ini {
+pub fn load_ini(file_path: &str) -> Result<ini::Ini, String> {
     let mut file = ini_file::IniFile::default();
     file.set_path(file_path);
 
     let mut ini = ini::Ini::default();
-    ini.load(&mut file).unwrap();
-    ini
+    match ini.load(&mut file) {
+        Ok(_) => {},
+        Err(err) => {
+            return Err(err);
+        }
+    };
+    Ok(ini)
 }
 
 
 pub fn parse_desktop_file(desktop_file_path: PathBuf) -> App {
     let mut app = App::default();
     app.desktop = desktop_file_path.clone();
-    let ini = load_ini(app.desktop.to_str().unwrap());
+    
+    let ini = match load_ini(app.desktop.to_str().unwrap()) {
+        Ok(i) => i,
+        Err(err) => {
+            error!("Failed to load desktop file \"{}\", with error: {}", app.desktop.to_str().unwrap(), err);
+            return app;
+        }
+    };
 
     match ini.get("Desktop Entry", "Name") {
         Ok(item) => app.name = item.value,
