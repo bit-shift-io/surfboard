@@ -1,5 +1,5 @@
 use iced::{Point, Task};
-#[cfg(target_os = "linux")]
+#[cfg(target_os="windows")]
 use iced_layershell::reexport::Anchor;
 use super::*;
 
@@ -34,7 +34,7 @@ impl WindowHandler {
 
     pub fn update(&mut self, message: window::Message) -> Task<main_app::Message> {
         
-        #[cfg(target_os = "linux")]
+        #[cfg(target_os="windows")]
         match message {
             Message::Dock(dock) => {
                 if self.windowed {

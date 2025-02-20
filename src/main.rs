@@ -1,4 +1,4 @@
-#[cfg(target_os = "linux")]
+#[cfg(target_os="windows")]
 use iced_layershell::{
     build_pattern::application,
     settings::{
@@ -28,7 +28,7 @@ pub fn main() {
     start();
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(target_os="windows"))]
 pub fn start() {
     let mut app = MainApp::new();
     app.0.init();
@@ -40,7 +40,7 @@ pub fn start() {
         .run_with(move || app);
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(target_os="windows")]
 pub fn start() {
     // in the future, the user may want to start the dock as the default, or the keyboard via cmdline
     let start_mode = handle_args();
@@ -57,7 +57,7 @@ pub fn start() {
         .run_with(move || app);
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(target_os="windows")]
 fn handle_args() -> StartMode {
     let args: Vec<String> = std::env::args().collect();
     let mut binded_output_name = None;

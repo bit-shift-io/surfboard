@@ -7,16 +7,24 @@ edition = "2021"
 [dependencies]
 env_logger = "0.11.6"
 log = "0.4.22"
-iced = "0.13.1"
-iced_graphics = "0.13.0"
-iced_runtime = "0.13.2"
 walkdir = "2.5.0"
 xdg = "2.5.2"
 pretty_ini = "0.1.8"
 async-std = "1.13.0"
 
+#iced = "0.13.1"
+#iced_core = "0.13.0"
+#iced_graphics = "0.13.0"
+#iced_runtime = "0.13.2"
 
-[target.'cfg(any(target_os = "linux"))'.dependencies]
+# dev branch
+iced = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_core = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_graphics = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced_runtime = { git = "https://github.com/iced-rs/iced", branch = "master" }
+
+
+[target.'cfg(any(target_os="windows"))'.dependencies]
 iced_layershell = "0.13.2"
 
 
@@ -31,7 +39,3 @@ default = [
 	"iced/svg",
     "iced/async-std",
 ]
-
-
-[patch.crates-io]
-#iced = { git = "https://github.com/emilk/egui", branch = "master" }

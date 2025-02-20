@@ -1,15 +1,8 @@
 use iced::{
-    daemon::Appearance, 
-    event, 
-    widget::stack, 
-    Color, 
-    Element, 
-    Event, 
-    Subscription, 
-    Task
+    event, theme::{self, Style}, widget::stack, Color, Element, Event, Subscription, Task
 };
 
-#[cfg(target_os = "linux")]
+#[cfg(target_os="windows")]
 use iced_layershell::{
     reexport::{
         Anchor, 
@@ -98,8 +91,8 @@ impl MainApp {
         }
     }
 
-    pub fn style(&self, theme: &iced::Theme) -> Appearance {
-        Appearance {
+    pub fn style(&self, theme: &iced::Theme) -> Style {
+        Style {
             background_color: Color::from_rgba(0.21, 0.23, 0.25, 0.95),
             text_color: theme.palette().text,
         }
@@ -121,7 +114,7 @@ impl MainApp {
 }
 
 
-#[cfg(target_os = "linux")]
+#[cfg(target_os="windows")]
 impl MainApp {
     pub fn default_layer_shell(_start_mode: StartMode) -> LayerShellSettings {
         let window_handler = WindowHandler::new();
