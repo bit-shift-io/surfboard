@@ -1,7 +1,3 @@
-use iced::{
-    event, theme::{self, Style}, widget::stack, Color, Element, Event, Subscription, Task
-};
-
 #[cfg(target_os="windows")]
 use iced_layershell::{
     reexport::{
@@ -12,20 +8,30 @@ use iced_layershell::{
     to_layer_message,
 };
 
+use iced::{
+    event, 
+    theme::Style, 
+    widget::stack, 
+    Color, 
+    Element, 
+    Event, 
+    Subscription, 
+    Task
+};
+
 use crate::*;
 
 
 to_layershell_message! { // extra layershell messages
 #[derive(Debug, Clone)]
 pub enum Message {
-    Debug(String),
-    IcedEvent(Event),
-    WindowHandler(window::Message),
-    ViewHandler(view::Message),
-    GestureHandler(gesture::Message),
-    InputHandler(input::Message),
     ComponentHandler(component::Message),
-    None,
+    GestureHandler(gesture::Message),
+    WindowHandler(window::Message),
+    InputHandler(input::Message),
+    ViewHandler(view::Message),
+    IcedEvent(Event),
+    Debug(String),
 }
 }
 
@@ -87,7 +93,6 @@ impl MainApp {
                 info!("{s}");
                 Task::none()
             }
-            _ => Task::none(),
         }
     }
 

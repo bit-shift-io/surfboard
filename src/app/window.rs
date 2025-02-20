@@ -1,6 +1,11 @@
-use iced::{Point, Task};
 #[cfg(target_os="windows")]
 use iced_layershell::reexport::Anchor;
+
+use iced::{
+    Point, 
+    Task
+};
+
 use super::*;
 
 /// Handles all things window related.  

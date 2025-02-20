@@ -182,16 +182,7 @@ where
         )
     }
 
-    /*
-    // note: this will work in version 0.14 development build!
-    // ARGHHH WE NEED IT NOW!
 
-    // todo: Brons help, how do i get some sort of animation loop here for a key?
-    // for animation: https://github.com/iced-rs/iced/blob/master/examples/loading_spinners/src/circular.rs
-    // Fab: check the link above. Update function is for recieving messages on the message bus. So this will be for storing states.
-    // use the draw function to draw any animations. Use the macro "info!("HELP!");" to print to console
-    // or info!("{:?}", some_value); to print out values.. pop it in the update and draw functions to see how they operate :)
-    */
     fn update(
         &mut self,
         tree: &mut Tree,
@@ -203,6 +194,24 @@ where
         shell: &mut Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
+
+
+
+
+
+
+        /*
+
+        // todo: Brons help, how do i get some sort of animation loop here for a key?
+        // for animation: https://github.com/iced-rs/iced/blob/master/examples/loading_spinners/src/circular.rs
+        // Fab: check the link above. Update function is for recieving messages on the message bus. So this will be for storing states.
+        // use the draw function to draw any animations. Use the macro "info!("HELP!");" to print to console
+        // or info!("{:?}", some_value); to print out values.. pop it in the update and draw functions to see how they operate :)
+        // Fab: this should work now were on 0.14? I guess!
+        
+        */
+
+
         /* 
         let state = tree.state.downcast_mut::<State>();
 
@@ -298,6 +307,8 @@ where
 
 
     // TODO: move to update??!
+    // check new button.rs
+
     // fn on_event(
     //     &mut self,
     //     state: &mut Tree, // tree
