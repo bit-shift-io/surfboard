@@ -10,7 +10,6 @@ use iced::{
         Widget
     }, 
     border, 
-    event, 
     overlay, 
     touch, 
     widget::text, 
@@ -187,16 +186,97 @@ where
         &mut self,
         tree: &mut Tree,
         event: &Event,
-        _layout: Layout<'_>,
-        _cursor: mouse::Cursor,
-        _renderer: &Renderer,
-        _clipboard: &mut dyn Clipboard,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &Renderer,
+        clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
-        _viewport: &Rectangle,
+        viewport: &Rectangle,
     ) {
+        // TODO: key is gobbling our events. Need to fix this to work with gestures - short tap vs glide gesture
 
 
+        // update sub component widget
+        // self.content.as_widget_mut().update(
+        //     &mut tree.children[0],
+        //     event,
+        //     layout.children().next().unwrap(),
+        //     cursor,
+        //     renderer,
+        //     clipboard,
+        //     shell,
+        //     viewport,
+        // );
 
+        // // return if event captured by widget
+        // if shell.is_event_captured() {
+        //     return;
+        // }
+
+        // which event
+        match event {
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerPressed { .. }) => {
+                if self.on_press.is_some() {
+                    let bounds = layout.bounds();
+
+                    if cursor.is_over(bounds) {
+                        let state = tree.state.downcast_mut::<State>();
+
+                        state.is_pressed = true;
+
+                        // disable for gestures
+                        //shell.capture_event();
+                    }
+                }
+            }
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerLifted { .. }) => {
+                if let Some(on_press) = &self.on_press {
+                    let state = tree.state.downcast_mut::<State>();
+
+                    if state.is_pressed {
+                        state.is_pressed = false;
+
+                        let bounds = layout.bounds();
+
+                        if cursor.is_over(bounds) {
+                            shell.publish(on_press.get());
+                        }
+
+                        // disable for gestures
+                        //shell.capture_event();
+                    }
+                }
+            }
+            Event::Touch(touch::Event::FingerLost { .. }) => {
+                let state = tree.state.downcast_mut::<State>();
+
+                state.is_pressed = false;
+            }
+            _ => {}
+        }
+
+        // more stuff from button.rs
+        // let current_status = if self.on_press.is_none() {
+        //     Status::Disabled
+        // } else if cursor.is_over(layout.bounds()) {
+        //     let state = tree.state.downcast_ref::<State>();
+
+        //     if state.is_pressed {
+        //         Status::Pressed
+        //     } else {
+        //         Status::Hovered
+        //     }
+        // } else {
+        //     Status::Active
+        // };
+
+        // if let Event::Window(window::Event::RedrawRequested(_now)) = event {
+        //     self.status = Some(current_status);
+        // } else if self.status.is_some_and(|status| status != current_status) {
+        //     shell.request_redraw();
+        // }
 
 
 
@@ -210,8 +290,6 @@ where
         // Fab: this should work now were on 0.14? I guess!
         
         */
-
-
         /* 
         let state = tree.state.downcast_mut::<State>();
 
@@ -305,118 +383,6 @@ where
         }
     }
 
-
-    // TODO: move to update??!
-    // check new button.rs
-
-    // fn on_event(
-    //     &mut self,
-    //     state: &mut Tree, // tree
-    //     event: Event,
-    //     layout: Layout<'_>,
-    //     cursor: mouse::Cursor,
-    //     renderer: &Renderer,
-    //     clipboard: &mut dyn Clipboard,
-    //     shell: &mut Shell<'_, Message>,
-    //     viewport: &Rectangle,
-    // ) -> event::Status {
-
-    //     //event::Status::Ignored
-        
-    //     // // event from button.rs
-    //     if let event::Status::Captured = self.content.as_widget_mut().on_event(
-    //         &mut state.children[0],
-    //         event.clone(),
-    //         layout.children().next().unwrap(),
-    //         cursor,
-    //         renderer,
-    //         clipboard,
-    //         shell,
-    //         viewport,
-    //     ) {
-    //         return event::Status::Captured;
-    //     }
-
-    //     match event {
-    //         Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
-    //         | Event::Touch(touch::Event::FingerPressed { .. }) => {
-    //             if self.on_press.is_some() {
-    //                 let bounds = layout.bounds();
-
-    //                 if cursor.is_over(bounds) {
-    //                     let state = state.state.downcast_mut::<State>();
-
-    //                     state.is_pressed = true;
-
-    //                     // comment the following to allow gestures to work
-    //                     //return event::Status::Captured;
-    //                 }
-    //             }
-    //         }
-    //         Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
-    //         | Event::Touch(touch::Event::FingerLifted { .. }) => {
-    //             if let Some(on_press) = self.on_press.as_ref().map(OnPress::get)
-    //             {
-    //                 let state = state.state.downcast_mut::<State>();
-
-    //                 if state.is_pressed {
-    //                     state.is_pressed = false;
-
-    //                     let bounds = layout.bounds();
-
-    //                     if cursor.is_over(bounds) {
-    //                         shell.publish(on_press);
-    //                     }
-
-    //                     // comment the following to allow gestures to work
-    //                     //return event::Status::Captured;
-    //                 }
-    //             }
-    //         }
-    //         Event::Touch(touch::Event::FingerLost { .. }) => {
-    //             let state = state.state.downcast_mut::<State>();
-
-    //             state.is_pressed = false;
-    //         }
-    //         _ => {}
-    //     }
-
-    //     event::Status::Ignored
-
-
-    //     // cursor over event
-    //     // if cursor.is_over(layout.bounds()) {
-    //     //     self.mouse_over = true;
-    //     //     self.highlight = true;
-    //     //     match event {
-    //     //         Event::Mouse(mouse::Event::ButtonPressed(_)) => {
-    //     //             if self.on_press.is_some() {
-    //     //                 //let result = Some(self.on_press);
-    //     //                 //shell.publish(Some(self.on_press).clone());
-    //     //             }
-    //     //             event::Status::Captured
-    //     //         }
-    //     //         _ => event::Status::Ignored,
-    //     //     }
-    //     // } else {
-    //     //     self.mouse_over = false;
-    //     //     self.highlight = false;
-    //     //     event::Status::Ignored
-    //     // }
-
-
-    //     // keyboard event
-    //     // match event {
-    //     //     Event::Keyboard(keyboard::Event::KeyPressed {
-    //     //         key: keyboard::Key::Named(Named::Space),
-    //     //         ..
-    //     //     }) => {
-    //     //         self.highlight = !self.highlight;
-    //     //         event::Status::Captured
-    //     //     }
-    //     //     _ => event::Status::Ignored,
-    //     // }
-    // }
     
     fn size_hint(&self) -> Size<Length> {
         self.size()
