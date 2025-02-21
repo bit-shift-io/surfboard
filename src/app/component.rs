@@ -29,6 +29,7 @@ impl ComponentHandler {
     pub fn update(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
             Message::Update(text, rectangle) => {
+                info!("Update: {text} rectangle");
                 Task::none()
             }
             Message::Reset => {

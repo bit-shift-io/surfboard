@@ -12,7 +12,7 @@ use iced::{
     border, 
     overlay, 
     touch, 
-    widget::text, 
+    widget::{text, Text}, 
     Color, 
     Element, 
     Event, 
@@ -24,6 +24,9 @@ use iced::{
     Theme, 
     Vector
 };
+use iced_core::window;
+
+use crate::app::{component, main_app, ComponentHandler};
 
 
 // https://giesch.dev/iced-hoverable/
@@ -42,14 +45,12 @@ where
 {
     content: Element<'a, Message, Theme, Renderer>,
     on_press: Option<OnPress<'a, Message>>,
+    on_resize: Option<Box<dyn Fn(Size) -> Message + 'a>>,
+    on_show: Option<Box<dyn Fn(Size) -> Message + 'a>>,
+    on_bounds: Option<Box<dyn Fn(Rectangle) -> Message + 'a>>,
 }
 
 
-// State is the internal state of the button
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-struct State {
-    is_pressed: bool,
-}
 
 /// OnPress stores the message or closure that will be produced when the [`Key`] is pressed.
 enum OnPress<'a, Message> {
@@ -69,6 +70,7 @@ impl<'a, Message: Clone> OnPress<'a, Message> {
 impl<'a, Message, Renderer> Key<'a, Message, Theme, Renderer>
 where
     Renderer: 'a + iced_core::Renderer + iced_core::text::Renderer,
+    Message: 'a + Clone,
 {
     /// Creates a new [`Key`] with the given content.
     pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>,) -> Self {
@@ -76,7 +78,44 @@ where
         Self {
             content,
             on_press: None,
+            on_resize: None,
+            on_show: None,
+            on_bounds: None
         }
+    }
+
+    /// Sets the message to be produced when the content pops into view.
+    ///
+    /// The closure will receive the [`Size`] of the content in that moment.
+    /// from pop.rs
+    pub fn on_show(mut self, on_show: impl Fn(Size) -> Message + 'a) -> Self {
+        info!("on_show");
+        self.on_show = Some(Box::new(on_show));
+        self
+    }
+
+    /// Sets the message to be produced when the content changes [`Size`] once its in view.
+    ///
+    /// The closure will receive the new [`Size`] of the content.
+    /// from pop.rs
+    pub fn on_resize(
+        mut self,
+        on_resize: impl Fn(Size) -> Message + 'a,
+    ) -> Self {
+        self.on_resize = Some(Box::new(on_resize));
+        self
+    }
+
+    /// Sets the message to be produced when the content changes [`Rectangle`] once its in view.
+    ///
+    /// The closure will receive the new [`Rectangle`] of the content.
+    /// from pop.rs
+    pub fn on_bounds(
+        mut self,
+        on_bounds: impl Fn(Rectangle) -> Message + 'a,
+    ) -> Self {
+        self.on_bounds = Some(Box::new(on_bounds));
+        self
     }
 
     /// Creates a new [`Key`] with the given content.
@@ -85,6 +124,9 @@ where
         Self {
             content,
             on_press: None,
+            on_resize: None,
+            on_show: None,
+            on_bounds: None
         }
     }
 
@@ -123,12 +165,21 @@ where
 }
 
 
+
+// State is the internal state of the button
+#[derive(Debug, Clone, Default)]
+struct State {
+    is_pressed: bool,
+    last_size: Option<Size>,
+}
+
+
 /// The meat & potatoes of the widget
-impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> 
-    for Key<'a, Message, Theme, Renderer>
+impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> 
+    for Key<'_, Message, Theme, Renderer>
 where
-    Renderer: 'a + iced_core::Renderer + iced_core::text::Renderer,
-    Message: 'a + Clone,
+    Renderer: iced_core::Renderer + iced_core::text::Renderer,
+    Message: Clone,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State>()
@@ -193,6 +244,28 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) {
+        // notify on resize
+        if let Event::Window(window::Event::RedrawRequested(now)) = &event {
+            let state = tree.state.downcast_mut::<State>();
+            let bounds = layout.bounds();
+            let top_left_distance = viewport.distance(bounds.position());
+            let bottom_right_distance = viewport
+                .distance(bounds.position() + Vector::from(bounds.size()));
+
+            let distance = top_left_distance.min(bottom_right_distance);
+            if let Some(on_bounds) = &self.on_bounds {
+                let size = bounds.size();
+                if Some(size) != state.last_size {
+                    state.last_size = Some(size);
+                    shell.publish(on_bounds(bounds));
+                    //let msg: Message = main_app::Message::Debug(String::from("q"));
+                    //let closure = |rectangle| main_app::Message::ComponentHandler(component::Message::Update(String::from("q"), rectangle));
+                    //shell.publish(closure);
+                }
+            }
+        }
+
+
         // TODO: key is gobbling our events. Need to fix this to work with gestures - short tap vs glide gesture
 
 
@@ -435,8 +508,8 @@ where
     Theme: 'a,
     Message: 'a + Clone,
 {
-    fn from(widget: Key<'a, Message, Theme, Renderer>) -> Self {
-        Element::new(widget)
+    fn from(key: Key<'a, Message, Theme, Renderer>) -> Self {
+        Element::new(key)
     }
 }
 

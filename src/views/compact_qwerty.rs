@@ -22,7 +22,10 @@ impl ViewTrait for CompactQwertyView {
     fn view(&self, _view_handler: &ViewHandler) -> iced::Element<main_app::Message> {
         column![
             row![
-                Key::from_str("q").on_press(main_app::Message::Debug(String::from("q"))),
+                Key::from_str("q")
+                    .on_press(main_app::Message::Debug(String::from("q")))
+                    .on_bounds(|bounds| main_app::Message::ComponentHandler(component::Message::Update(String::from("q"), bounds))),
+                    
                 Key::from_str("w").on_press(main_app::Message::Debug(String::from("w"))),
                 Key::from_str("e").on_press(main_app::Message::Debug(String::from("e"))),
                 Key::from_str("r").on_press(main_app::Message::Debug(String::from("r"))),

@@ -48,7 +48,7 @@ impl ViewTrait for MiniPickView {
 
         self.shortcuts = Some(shortcuts);
 
-        info!("{:?}", self.shortcuts);
+        //info!("{:?}", self.shortcuts);
     }
 
     fn view(&self, _view_handler: &ViewHandler) -> Element<main_app::Message> {
