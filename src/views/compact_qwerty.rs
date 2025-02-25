@@ -6,7 +6,7 @@ use iced::{
     Length,
 };
 use crate::app::*;
-use crate::components::*;
+use crate::comp::*;
 use crate::utils::*;
 
 

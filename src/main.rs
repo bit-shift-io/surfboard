@@ -14,7 +14,7 @@ extern crate log;
 mod macros;
 
 mod app;
-mod components;
+mod comp;
 mod utils;
 mod views;
 use app::*;

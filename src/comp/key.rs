@@ -12,7 +12,6 @@ use iced::{
     border, 
     overlay, 
     touch, 
-    widget::{text, Text}, 
     Color, 
     Element, 
     Event, 
@@ -22,11 +21,10 @@ use iced::{
     Shadow, 
     Size, 
     Theme, 
-    Vector
+    Vector,
+    widget::text
 };
 use iced_core::window;
-
-use crate::app::{component, main_app, ComponentHandler};
 
 
 // https://giesch.dev/iced-hoverable/
@@ -70,11 +68,23 @@ impl<'a, Message: Clone> OnPress<'a, Message> {
 impl<'a, Message, Renderer> Key<'a, Message, Theme, Renderer>
 where
     Renderer: 'a + iced_core::Renderer + iced_core::text::Renderer,
-    Message: 'a + Clone,
+    Message: Clone,
 {
     /// Creates a new [`Key`] with the given content.
     pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>,) -> Self {
         let content = content.into();
+        Self {
+            content,
+            on_press: None,
+            on_resize: None,
+            on_show: None,
+            on_bounds: None
+        }
+    }
+
+    /// Creates a new [`Key`] with the given content.
+    pub fn from_str(s: &str,) -> Self {
+        let content = text(s.to_string()).center().into();
         Self {
             content,
             on_press: None,
@@ -118,17 +128,6 @@ where
         self
     }
 
-    /// Creates a new [`Key`] with the given content.
-    pub fn from_str(s: &str,) -> Self {
-        let content = text(s.to_string()).center().into();
-        Self {
-            content,
-            on_press: None,
-            on_resize: None,
-            on_show: None,
-            on_bounds: None
-        }
-    }
 
     /// Sets the message that will be produced when the [`Key`] is pressed.
     ///

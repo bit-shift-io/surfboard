@@ -1,5 +1,5 @@
 use crate::app::*;
-use crate::components::*;
+use crate::comp::*;
 use crate::utils::*;
 use iced::widget::svg;
 use iced::{Element, Length};

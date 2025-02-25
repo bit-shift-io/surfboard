@@ -10,7 +10,7 @@ use iced::widget::{image,
 use iced::{Element, 
     Length
 };
-use crate::components::*;
+use crate::comp::*;
 use crate::app::*;
 use crate::utils::*;
 
