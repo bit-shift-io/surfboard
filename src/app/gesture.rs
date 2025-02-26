@@ -163,7 +163,11 @@ impl GestureHandler {
         return_task
     }
 
-    pub fn append(&mut self, position: Point) -> Task<main_app::Message> {
+    pub fn update_move(&mut self, position: Point) -> Task<main_app::Message> {
+        if self.current_gesture.is_none() {
+            let _ = self.start();
+        }
+
         if let Some(gesture) = self.current_gesture.as_mut() {
             let length = gesture.buffer.len();
 

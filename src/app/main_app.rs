@@ -83,7 +83,7 @@ impl MainApp {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         // TODO: should this be changed to use map??
         match message {
-            Message::IcedEvent(event) => self.input_handler.update2(&event, &mut self.gesture_handler, &mut self.window_handler),
+            Message::IcedEvent(event) => self.input_handler.update_event(&event, &mut self.gesture_handler, &mut self.window_handler),
             Message::InputHandler(msg) => self.input_handler.update(msg),
             Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::GestureHandler(msg) => self.gesture_handler.update(msg),

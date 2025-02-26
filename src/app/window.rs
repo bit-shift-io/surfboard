@@ -97,7 +97,7 @@ impl WindowHandler {
         Task::none()
     }
 
-    pub fn append_move(&mut self, position: Point) -> Task<main_app::Message> {
+    pub fn update_move(&mut self, position: Point) -> Task<main_app::Message> {
         // get windows initial position - the margin
         if self.move_start.is_none() {
             self.move_start = Some(position);

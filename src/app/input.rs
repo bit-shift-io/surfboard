@@ -19,6 +19,7 @@ use iced_runtime::Action;
 use super::*;
 
 static LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
+static MOVE_THRESHOLD: f32 = 10.0;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -32,9 +33,18 @@ pub struct InputHandler {
     rmouse_down: bool,
     finger_presses: Vec<(u64, Point, Instant)>, // id, pos, time
     timer_enabled: bool,
-    timer_start: Option<Instant>,
+    timer_start: Option<Instant>, // start time of press
+    start_cursor_position: Option<Point>, // start position of press
+    last_cursor_position: Option<Point>, // last cursor position, so we know position of click
+    cursor_position: Option<Point>, // cursor position, so we know position of click, bug in iced not giving the point on click!
 }
 
+/// Notes on how this works:
+/// - The InputHandler is responsible for handling all user inputs.
+/// - When the user taps the screen, the InputHandler will start a timer, and store a start position.
+/// - If the user lifts their finger before the timer ends, without moving, the InputHandler will consider it a tap.
+/// - If the user moves their finger before the timer ends, the InputHandler will consider it a gesture.
+/// - If the user presses their finger for a long time, without moving, the InputHandler will consider it a long press.
 impl InputHandler {
     pub fn new() -> Self {
         InputHandler {
@@ -42,14 +52,17 @@ impl InputHandler {
             rmouse_down: false,
             finger_presses: Vec::new(),
             timer_enabled: false,
-            timer_start: None
+            timer_start: None,
+            start_cursor_position: None,
+            last_cursor_position: None,
+            cursor_position: None,
         }
     }
 
     pub fn update<'a>(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
             Message::Tick => {
-                info!("input tick");
+                info!("input timer tick");
                 if !self.timer_enabled {
                     return Task::none()
                 }
@@ -64,7 +77,7 @@ impl InputHandler {
         }
     }
 
-    pub fn update2<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler) -> Task<main_app::Message> {
+    pub fn update_event<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler) -> Task<main_app::Message> {
         match event {
             //Event::Window(event) => todo!(),
 
@@ -78,12 +91,14 @@ impl InputHandler {
             // mouse
             Event::Mouse(event) => {
                 match event {
+                    // button pressed
                     mouse::Event::ButtonPressed(button) => {
                         match button {
                             mouse::Button::Left => {
-                                self.lmouse_down = true;                        
+                                self.lmouse_down = true;                   
                                 self.timer_start();
-                                return gesture_handler.start();
+                                self.start_cursor_position = self.cursor_position;
+                                return Task::none()
                             }
                             mouse::Button::Right => {
                                 self.rmouse_down = true;
@@ -92,10 +107,39 @@ impl InputHandler {
                             _ => Task::none()
                         }
                     }
+
+                    // cursor moved
+                    mouse::Event::CursorMoved { position } => {
+                        // store the new cursor position
+                        self.cursor_position = Some(*position);
+
+                        if self.lmouse_down {
+                            // timer must be still running
+                            self.timer_end();
+
+                            // check if the cursor has moved above the threshold
+                            // do nothing if the cursor has not moved above the threshold
+                            let is_above_move_threshold = self.is_above_move_threshold();
+                            if !is_above_move_threshold {
+                                return Task::none()
+                            }
+
+                            return gesture_handler.update_move(*position);
+                        }
+
+                        if self.rmouse_down {
+                            return window_handler.update_move(*position);
+                        }
+
+                        Task::none()
+                    }
+
+                    // button released
                     mouse::Event::ButtonReleased(button) => {
                         match button {
                             mouse::Button::Left => {
                                 self.lmouse_down = false;
+                                self.timer_end();
                                 return gesture_handler.end();
                             }
                             mouse::Button::Right => {
@@ -105,17 +149,7 @@ impl InputHandler {
                             _ => Task::none()
                         }
                     }
-                    mouse::Event::CursorMoved { position } => {
-                        self.timer_end();
 
-                        if self.lmouse_down {
-                            return gesture_handler.append(*position);
-                        }
-                        if self.rmouse_down {
-                            return window_handler.append_move(*position);
-                        }
-                        Task::none()
-                    }
                     _ => Task::none()
                     
                 }
@@ -157,7 +191,7 @@ impl InputHandler {
                                 info!("Finger 1 moved to: {position}");
                             }
                         }
-                        return gesture_handler.append(*position);
+                        return gesture_handler.update_move(*position);
                     }
                     touch::Event::FingerLifted { id, ..} | touch::Event::FingerLost { id, ..} => {
                         self.finger_presses.retain(|(fid, _, _)| *fid != id.0);
@@ -177,6 +211,32 @@ impl InputHandler {
             true => time::every(Duration::from_millis(100)).map(|_| Message::Tick), // every function not found in iced::time?!
             false => Subscription::none()
         }
+    }
+
+    fn is_tap(press_start: Instant, current_time: Instant, distance: f64, velocity: f64, threshold: Duration) -> bool {
+        let press_duration = current_time.duration_since(press_start);
+        let distance_threshold = 10.0;
+        let velocity_threshold = 100.0;
+        press_duration < threshold && distance < distance_threshold && velocity < velocity_threshold
+    }
+
+    /// Returns true if the distance between the last cursor position and the current cursor position is larger than
+    /// MOVE_THRESHOLD. Updates the last cursor position to the current position. If the last cursor position is None,
+    /// it sets it to the current cursor position and returns false.
+    fn is_above_move_threshold(&mut self) -> bool {
+        if self.last_cursor_position.is_none() {
+            self.last_cursor_position = self.cursor_position;
+            return false
+        }
+        let last_cursor_position = self.last_cursor_position.unwrap();
+        let distance = self.start_cursor_position.unwrap().distance(last_cursor_position);
+        let result = distance > MOVE_THRESHOLD;
+        // only update until this changes to true
+        if result {
+            return result
+        }
+        self.last_cursor_position = self.cursor_position;
+        return result
     }
 
     pub fn timer_start(&mut self) {
