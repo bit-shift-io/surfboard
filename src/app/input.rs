@@ -23,7 +23,7 @@ static MOVE_THRESHOLD: f32 = 10.0;
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Tick,
+    LongPressTick,
 }
 
 /// Handles the user inputs.  
@@ -32,8 +32,7 @@ pub struct InputHandler {
     lmouse_down: bool,
     rmouse_down: bool,
     finger_presses: Vec<(u64, Point, Instant)>, // id, pos, time
-    timer_enabled: bool,
-    timer_start: Option<Instant>, // start time of press
+    long_press_timer_enabled: bool,
     start_cursor_position: Option<Point>, // start position of press
     last_cursor_position: Option<Point>, // last cursor position, so we know position of click
     cursor_position: Option<Point>, // cursor position, so we know position of click, bug in iced not giving the point on click!
@@ -51,8 +50,7 @@ impl InputHandler {
             lmouse_down: false,
             rmouse_down: false,
             finger_presses: Vec::new(),
-            timer_enabled: false,
-            timer_start: None,
+            long_press_timer_enabled: false,
             start_cursor_position: None,
             last_cursor_position: None,
             cursor_position: None,
@@ -61,19 +59,14 @@ impl InputHandler {
 
     pub fn update<'a>(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
-            Message::Tick => {
-                info!("input timer tick");
-                if !self.timer_enabled {
+            Message::LongPressTick => {
+                // will only tick at long press duration
+                if !self.long_press_timer_enabled {
                     return Task::none()
                 }
-                let duration = Instant::now().duration_since(self.timer_start.unwrap());
-                if duration >= LONG_PRESS_DURATION {
-                    self.timer_end();
-                    return Task::done(view::Message::ActionGesture(ActionDirection::LongPress)).map(main_app::Message::ViewHandler);
-                }
-                Task::none()
+                self.reset();
+                return Task::done(view::Message::ActionGesture(ActionDirection::LongPress)).map(main_app::Message::ViewHandler);
             },
-            //_ => Task::none()
         }
     }
 
@@ -96,7 +89,7 @@ impl InputHandler {
                         match button {
                             mouse::Button::Left => {
                                 self.lmouse_down = true;                   
-                                self.timer_start();
+                                self.long_press_timer_enabled = true;
                                 self.start_cursor_position = self.cursor_position;
                                 return Task::none()
                             }
@@ -115,7 +108,7 @@ impl InputHandler {
 
                         if self.lmouse_down {
                             // timer must be still running
-                            self.timer_end();
+                            self.long_press_timer_enabled = false;
 
                             // check if the cursor has moved above the threshold
                             // do nothing if the cursor has not moved above the threshold
@@ -139,8 +132,26 @@ impl InputHandler {
                         match button {
                             mouse::Button::Left => {
                                 self.lmouse_down = false;
-                                self.timer_end();
-                                return gesture_handler.end();
+
+                                // gesture
+                                if self.is_above_move_threshold() {
+                                    info!("gesture detected!");
+                                    self.reset();
+                                    return gesture_handler.end();
+                                }
+
+                                // tap if timer enabled and cursor has not moved above the threshold
+                                if self.long_press_timer_enabled {
+                                    info!("Tap detected!");
+                                    self.reset();
+                                    return Task::none();
+                                }
+
+                                // long press
+                                // handled above in the tick update
+                                info!("Long press detected!");
+                                self.reset();
+                                return Task::none();
                             }
                             mouse::Button::Right => {
                                 self.rmouse_down = false;
@@ -160,7 +171,7 @@ impl InputHandler {
                 match event {
                     touch::Event::FingerPressed { id, position} => {
                         self.finger_presses.push((id.0, *position, Instant::now()));
-                        self.timer_start();
+                        self.long_press_timer_enabled = true;
 
                         // todo: if gesture has started and multiple fingers pressed, cancel the gesture.
                         // todo: then if multiple fingers pressed we want to move the window instead
@@ -184,7 +195,7 @@ impl InputHandler {
                         return gesture_handler.start();
                     }
                     touch::Event::FingerMoved { id, position} => {
-                        self.timer_end();
+                        self.long_press_timer_enabled = false;
                         
                         if let Some((_, _, _)) = self.finger_presses.iter_mut().find(|(fid, _, _)| *fid == id.0) {
                             if id.0 == 1 {
@@ -207,17 +218,10 @@ impl InputHandler {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        match self.timer_enabled {
-            true => time::every(Duration::from_millis(100)).map(|_| Message::Tick), // every function not found in iced::time?!
+        match self.long_press_timer_enabled {
+            true => time::every(LONG_PRESS_DURATION).map(|_| Message::LongPressTick),
             false => Subscription::none()
         }
-    }
-
-    fn is_tap(press_start: Instant, current_time: Instant, distance: f64, velocity: f64, threshold: Duration) -> bool {
-        let press_duration = current_time.duration_since(press_start);
-        let distance_threshold = 10.0;
-        let velocity_threshold = 100.0;
-        press_duration < threshold && distance < distance_threshold && velocity < velocity_threshold
     }
 
     /// Returns true if the distance between the last cursor position and the current cursor position is larger than
@@ -239,15 +243,8 @@ impl InputHandler {
         return result
     }
 
-    pub fn timer_start(&mut self) {
-        if !self.timer_enabled {
-            self.timer_start = Some(Instant::now());
-            self.timer_enabled = true;
-        }
-    }
-
-    pub fn timer_end(&mut self) {   
-        self.timer_enabled = false;
-        self.timer_start = None;
+    fn reset(&mut self) {
+        self.long_press_timer_enabled = false;
+        self.last_cursor_position = None;
     }
 }
