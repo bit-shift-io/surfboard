@@ -38,7 +38,6 @@ pub enum PressType {
 #[derive(Clone, Debug)]
 pub struct InputHandler {
     left_mouse: PressType,
-    //lmouse_down: bool,
     rmouse_down: bool,
     finger_presses: Vec<(u64, Point, Instant)>, // id, pos, time
     long_press_timer_enabled: bool,
@@ -57,7 +56,6 @@ impl InputHandler {
     pub fn new() -> Self {
         InputHandler {
             left_mouse: PressType::None,
-            //lmouse_down: false,
             rmouse_down: false,
             finger_presses: Vec::new(),
             long_press_timer_enabled: false,
