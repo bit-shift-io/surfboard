@@ -26,10 +26,19 @@ pub enum Message {
     LongPressTick,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum PressType {
+    None,
+    Tap,
+    LongPress,
+    Gesture,
+}
+
 /// Handles the user inputs.  
 #[derive(Clone, Debug)]
 pub struct InputHandler {
-    lmouse_down: bool,
+    left_mouse: PressType,
+    //lmouse_down: bool,
     rmouse_down: bool,
     finger_presses: Vec<(u64, Point, Instant)>, // id, pos, time
     long_press_timer_enabled: bool,
@@ -47,7 +56,8 @@ pub struct InputHandler {
 impl InputHandler {
     pub fn new() -> Self {
         InputHandler {
-            lmouse_down: false,
+            left_mouse: PressType::None,
+            //lmouse_down: false,
             rmouse_down: false,
             finger_presses: Vec::new(),
             long_press_timer_enabled: false,
@@ -65,6 +75,7 @@ impl InputHandler {
                     return Task::none()
                 }
                 self.reset();
+                self.left_mouse = PressType::LongPress;
                 return Task::done(view::Message::ActionGesture(ActionDirection::LongPress)).map(main_app::Message::ViewHandler);
             },
         }
@@ -88,7 +99,7 @@ impl InputHandler {
                     mouse::Event::ButtonPressed(button) => {
                         match button {
                             mouse::Button::Left => {
-                                self.lmouse_down = true;                   
+                                self.left_mouse = PressType::Tap;                
                                 self.long_press_timer_enabled = true;
                                 self.start_cursor_position = self.cursor_position;
                                 return Task::none()
@@ -106,10 +117,7 @@ impl InputHandler {
                         // store the new cursor position
                         self.cursor_position = Some(*position);
 
-                        if self.lmouse_down {
-                            // timer must be still running
-                            self.long_press_timer_enabled = false;
-
+                        if self.left_mouse != PressType::None {
                             // check if the cursor has moved above the threshold
                             // do nothing if the cursor has not moved above the threshold
                             let is_above_move_threshold = self.is_above_move_threshold();
@@ -117,6 +125,9 @@ impl InputHandler {
                                 return Task::none()
                             }
 
+                            // reset timer
+                            self.reset();
+                            self.left_mouse = PressType::Gesture;
                             return gesture_handler.update_move(*position);
                         }
 
@@ -131,27 +142,28 @@ impl InputHandler {
                     mouse::Event::ButtonReleased(button) => {
                         match button {
                             mouse::Button::Left => {
-                                self.lmouse_down = false;
-
-                                // gesture
-                                if self.is_above_move_threshold() {
-                                    info!("gesture detected!");
-                                    self.reset();
-                                    return gesture_handler.end();
+                                match self.left_mouse {
+                                    // PressType::None => {
+                                    //     self.reset();
+                                    //     return Task::none();
+                                    // }
+                                    // PressType::Tap => {
+                                    //     self.reset();
+                                    //     return Task::none();
+                                    // }
+                                    // PressType::LongPress => {
+                                    //     self.reset();
+                                    //     return Task::none();
+                                    // }
+                                    PressType::Gesture => {
+                                        self.reset();
+                                        return gesture_handler.end();
+                                    }
+                                    _ => {
+                                        self.reset();
+                                        Task::none()
+                                    }
                                 }
-
-                                // tap if timer enabled and cursor has not moved above the threshold
-                                if self.long_press_timer_enabled {
-                                    info!("Tap detected!");
-                                    self.reset();
-                                    return Task::none();
-                                }
-
-                                // long press
-                                // handled above in the tick update
-                                info!("Long press detected!");
-                                self.reset();
-                                return Task::none();
                             }
                             mouse::Button::Right => {
                                 self.rmouse_down = false;
@@ -244,6 +256,7 @@ impl InputHandler {
     }
 
     fn reset(&mut self) {
+        self.left_mouse = PressType::None;
         self.long_press_timer_enabled = false;
         self.last_cursor_position = None;
     }
