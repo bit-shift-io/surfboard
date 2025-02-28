@@ -72,7 +72,7 @@ impl InputHandler {
                 if !self.long_press_timer_enabled {
                     return Task::none()
                 }
-                self.reset();
+                self.long_press_timer_enabled = false;
                 self.left_mouse = PressType::LongPress;
                 return Task::done(view::Message::ActionGesture(ActionDirection::LongPress)).map(main_app::Message::ViewHandler);
             },
@@ -115,20 +115,38 @@ impl InputHandler {
                         // store the new cursor position
                         self.cursor_position = Some(*position);
 
-                        if self.left_mouse != PressType::None {
-                            // check if the cursor has moved above the threshold
-                            // do nothing if the cursor has not moved above the threshold
-                            let is_above_move_threshold = self.is_above_move_threshold();
-                            if !is_above_move_threshold {
-                                return Task::none()
-                            }
+                        // left mouse movement
+                        match self.left_mouse {
+                            PressType::Tap => {
+                                // check if the cursor has moved above the threshold
+                                // do nothing if the cursor has not moved above the threshold
+                                let is_above_move_threshold = self.is_above_move_threshold();
+                                if !is_above_move_threshold {
+                                    return Task::none()
+                                }
 
-                            // reset timer
-                            self.reset();
-                            self.left_mouse = PressType::Gesture;
-                            return gesture_handler.update_move(*position);
+                                // reset timer
+                                self.long_press_timer_enabled = false;
+                                self.left_mouse = PressType::Gesture;
+                                info!("Gesture started!");
+                                // add start position to gesture handler
+                                let _ = gesture_handler.start();
+                                if self.last_cursor_position.is_some() {
+                                    info!("last position: {position}");
+                                    let _ = gesture_handler.update_move(self.last_cursor_position.unwrap());
+                                }
+                                // and current position
+                                return gesture_handler.update_move(*position);
+                            }
+                            PressType::Gesture => {
+                                info!("Gesture moved to: {position}");
+                                return gesture_handler.update_move(*position);
+                            }
+                            _ => {}
+                            
                         }
 
+                        // right mouse movement
                         if self.rmouse_down {
                             return window_handler.update_move(*position);
                         }
@@ -140,28 +158,16 @@ impl InputHandler {
                     mouse::Event::ButtonReleased(button) => {
                         match button {
                             mouse::Button::Left => {
+                                let mut result = Task::none();
                                 match self.left_mouse {
-                                    // PressType::None => {
-                                    //     self.reset();
-                                    //     return Task::none();
-                                    // }
-                                    // PressType::Tap => {
-                                    //     self.reset();
-                                    //     return Task::none();
-                                    // }
-                                    // PressType::LongPress => {
-                                    //     self.reset();
-                                    //     return Task::none();
-                                    // }
-                                    PressType::Gesture => {
-                                        self.reset();
-                                        return gesture_handler.end();
-                                    }
-                                    _ => {
-                                        self.reset();
-                                        Task::none()
-                                    }
+                                    PressType::Gesture => { result = gesture_handler.end(); }
+                                    _ => {}
                                 }
+                                // reset the state
+                                self.left_mouse = PressType::None;
+                                self.long_press_timer_enabled = false;
+                                self.last_cursor_position = None;
+                                return result;
                             }
                             mouse::Button::Right => {
                                 self.rmouse_down = false;
@@ -251,11 +257,5 @@ impl InputHandler {
         }
         self.last_cursor_position = self.cursor_position;
         return result
-    }
-
-    fn reset(&mut self) {
-        self.left_mouse = PressType::None;
-        self.long_press_timer_enabled = false;
-        self.last_cursor_position = None;
     }
 }
