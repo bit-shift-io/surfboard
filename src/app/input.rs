@@ -79,7 +79,7 @@ impl InputHandler {
         }
     }
 
-    pub fn update_event<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler) -> Task<main_app::Message> {
+    pub fn update_event<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler, component_handler: &mut ComponentHandler) -> Task<main_app::Message> {
         match event {
             //Event::Window(event) => todo!(),
 
@@ -102,6 +102,7 @@ impl InputHandler {
                                 self.start_cursor_position = self.cursor_position;
                                 return Task::none()
                             }
+
                             mouse::Button::Right => {
                                 self.rmouse_down = true;
                                 return window_handler.start_move();
@@ -120,27 +121,35 @@ impl InputHandler {
                             PressType::Tap => {
                                 // check if the cursor has moved above the threshold
                                 // do nothing if the cursor has not moved above the threshold
-                                let is_above_move_threshold = self.is_above_move_threshold();
-                                if !is_above_move_threshold {
+                                if !self.is_above_move_threshold() {
                                     return Task::none()
                                 }
 
                                 // reset timer
                                 self.long_press_timer_enabled = false;
                                 self.left_mouse = PressType::Gesture;
-                                info!("Gesture started!");
-                                // add start position to gesture handler
+
+                                
+                                // add start positions
+                                let _ = component_handler.start();
                                 let _ = gesture_handler.start();
+
                                 if self.last_cursor_position.is_some() {
-                                    info!("last position: {position}");
                                     let _ = gesture_handler.update_move(self.last_cursor_position.unwrap());
+                                    let _ = component_handler.update_move(self.last_cursor_position.unwrap());
                                 }
-                                // and current position
-                                return gesture_handler.update_move(*position);
+
+                                // add current position
+                                return Task::batch(vec![
+                                    gesture_handler.update_move(*position), 
+                                    component_handler.update_move(*position),
+                                ])
                             }
                             PressType::Gesture => {
-                                info!("Gesture moved to: {position}");
-                                return gesture_handler.update_move(*position);
+                                return Task::batch(vec![
+                                    gesture_handler.update_move(*position), 
+                                    component_handler.update_move(*position),
+                                ])
                             }
                             _ => {}
                             
@@ -160,7 +169,12 @@ impl InputHandler {
                             mouse::Button::Left => {
                                 let mut result = Task::none();
                                 match self.left_mouse {
-                                    PressType::Gesture => { result = gesture_handler.end(); }
+                                    PressType::Gesture => { 
+                                        result = Task::batch(vec![
+                                            gesture_handler.end(), 
+                                            component_handler.end(),
+                                        ]);
+                                    }
                                     _ => {}
                                 }
                                 // reset the state
@@ -169,6 +183,7 @@ impl InputHandler {
                                 self.last_cursor_position = None;
                                 return result;
                             }
+
                             mouse::Button::Right => {
                                 self.rmouse_down = false;
                                 return window_handler.end_move();

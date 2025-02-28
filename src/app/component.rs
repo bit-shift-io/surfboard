@@ -1,4 +1,5 @@
 use iced::{
+    Point, 
     Rectangle, 
     Task
 };
@@ -47,7 +48,18 @@ impl ComponentHandler {
     }
 
     pub fn start(&mut self) -> Task<main_app::Message> {
+        info!("ComponentHandler started");
         self.components.clear();
+        Task::none()
+    }
+
+    pub fn end(&mut self) -> Task<main_app::Message> {
+        info!("ComponentHandler end");
+        Task::none()
+    }
+
+    pub fn update_move(&mut self, position: Point) -> Task<main_app::Message> {
+        info!("ComponentHandler update_move");
         Task::none()
     }
 
