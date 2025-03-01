@@ -253,7 +253,7 @@ impl GestureHandler {
 
     fn handle_view_gesture(&mut self, _gesture: Gesture) -> Task<main_app::Message> {
         // todo dictionary etc... pass to view or actionbar view
-        info!("view gesture");
+        //info!("view gesture");
         Task::none()
     }
 }
