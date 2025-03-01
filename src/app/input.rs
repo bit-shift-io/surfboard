@@ -79,7 +79,7 @@ impl InputHandler {
         }
     }
 
-    pub fn update_event<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler, component_handler: &mut ComponentHandler) -> Task<main_app::Message> {
+    pub fn update_event<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler, component_handler: &mut SearchHandler) -> Task<main_app::Message> {
         match event {
             //Event::Window(event) => todo!(),
 

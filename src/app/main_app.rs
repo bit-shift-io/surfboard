@@ -25,7 +25,7 @@ use crate::*;
 to_layershell_message! { // extra layershell messages
 #[derive(Debug, Clone)]
 pub enum Message {
-    ComponentHandler(component::Message),
+    SearchHandler(search::Message),
     GestureHandler(gesture::Message),
     WindowHandler(window::Message),
     InputHandler(input::Message),
@@ -39,7 +39,7 @@ pub enum Message {
 /// The main app holds all the helpers and links everything together.  
 #[derive(Debug)]
 pub struct MainApp {
-    pub component_handler: ComponentHandler,
+    pub search_handler: SearchHandler,
     pub gesture_handler: GestureHandler,
     pub window_handler: WindowHandler,
     pub input_handler: InputHandler,
@@ -50,7 +50,7 @@ pub struct MainApp {
 impl Default for MainApp {
     fn default() -> Self {
         Self {
-            component_handler: ComponentHandler::new(),
+            search_handler: SearchHandler::new(),
             gesture_handler: GestureHandler::new(),
             window_handler: WindowHandler::new(),
             input_handler: InputHandler::new(),
@@ -83,12 +83,12 @@ impl MainApp {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         // TODO: should this be changed to use map??
         match message {
-            Message::IcedEvent(event) => self.input_handler.update_event(&event, &mut self.gesture_handler, &mut self.window_handler, &mut self.component_handler),
+            Message::IcedEvent(event) => self.input_handler.update_event(&event, &mut self.gesture_handler, &mut self.window_handler, &mut self.search_handler),
             Message::InputHandler(msg) => self.input_handler.update(msg),
             Message::WindowHandler(msg) => self.window_handler.update(msg),
             Message::GestureHandler(msg) => self.gesture_handler.update(msg),
             Message::ViewHandler(msg) => self.view_handler.update(msg),
-            Message::ComponentHandler(msg) => self.component_handler.update(msg),
+            Message::SearchHandler(msg) => self.search_handler.update(msg),
             Message::Debug(s) => {
                 info!("{s}");
                 Task::none()

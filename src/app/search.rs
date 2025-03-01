@@ -25,14 +25,14 @@ pub struct ComponentData {
 /// Handles the state of widget/components.  
 /// This is used for the glide typing.
 #[derive(Clone, Debug)]
-pub struct ComponentHandler {
+pub struct SearchHandler {
     components: Vec<ComponentData>,
     weighted_items: Vec<ComponentData>,
 }
 
-impl ComponentHandler {
+impl SearchHandler {
     pub fn new() -> Self {
-        ComponentHandler {
+        SearchHandler {
             components: Vec::new(),
             weighted_items: Vec::new(),
         }
@@ -54,7 +54,6 @@ impl ComponentHandler {
 
     pub fn start(&mut self) -> Task<main_app::Message> {
         self.weighted_items.clear();
-        info!("ComponentHandler started");
         Task::none()
     }
 
@@ -63,7 +62,7 @@ impl ComponentHandler {
             .iter()
             .map(|item| format!("{} - {}\n", item.text, item.weight))
             .collect();
-        info!("weighted letters:\n{}", formatted_items);
+        info!("weighted:\n{}", formatted_items);
         Task::none()
     }
 
