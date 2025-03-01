@@ -16,18 +16,42 @@ pub enum Message {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ComponentData {
+pub struct Candidate {
     pub text: String,
     pub bounds: Rectangle,
     pub weight: u32,
+    pub points: Vec<Point>,
+}
+
+impl Candidate {
+    pub fn update_weight(&mut self) -> bool {
+        let mut weight_changed = false;
+        // calculate the distance between the last two points
+        if self.points.len() > 1 {
+            let distance = self.points[self.points.len() - 1].distance(self.points[self.points.len() - 2]);
+            let weight = ((1.0 - (distance / 100.0)) * 100.0) as u32;
+            if weight > self.weight {
+                self.weight = weight;
+                weight_changed = true;
+            }
+        }
+
+        // todo: calculate the number of points
+
+        // todo: calculate the change of angles
+
+        // todo: calculate the first and last points
+        
+        weight_changed
+    }
 }
 
 /// Handles the state of widget/components.  
 /// This is used for the glide typing.
 #[derive(Clone, Debug)]
 pub struct SearchHandler {
-    components: Vec<ComponentData>,
-    weighted_items: Vec<ComponentData>,
+    components: Vec<Candidate>,
+    weighted_items: Vec<Candidate>,
 }
 
 impl SearchHandler {
@@ -41,7 +65,7 @@ impl SearchHandler {
     pub fn update(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
             Message::Update(text, rectangle) => {
-                self.components.push(ComponentData { text, bounds: rectangle, weight: 0 });
+                self.components.push(Candidate { text, bounds: rectangle, weight: 0, points: Vec::new() });
                 Task::none()
             }
             Message::Reset => {
@@ -68,29 +92,35 @@ impl SearchHandler {
 
     pub fn update_move(&mut self, position: Point) -> Task<main_app::Message> {
 
-        // loop through components, and find the one that is closest to the position
-        let mut closest_component = None;
-        let mut closest_distance = f32::MAX;
-        for component in &self.components {
-            let distance = component.bounds.center().distance(position);
-            if distance < closest_distance {
-                closest_distance = distance;
-                closest_component = Some(component);
+        // loop through items, and find the one that contains the position
+        let mut selected_component = None;
+        for component in &mut self.components {
+            if component.bounds.contains(position) {
+                selected_component = Some(component);
+                break; // Exit the loop once we find the first component containing the position
             }
         }
 
-        if let Some(component) = closest_component {
-            if let Some(last_item) = self.weighted_items.last() {
-                if last_item.text != component.text {
-                    self.weighted_items.push(component.clone());
-                    //info!("{:?}", component.text);
+        // update the weighted item
+        if let Some(component) = selected_component {
+            let mut weight_changed = false;
+
+            match self.weighted_items.last_mut() {
+                Some(last_item) if last_item.text == component.text => {
+                    // update the last item
+                    last_item.points.push(position);
+                    weight_changed = last_item.update_weight();
                 }
-            } else {
-                self.weighted_items.push(component.clone());
-                //info!("first {:?}", component.text);
+                _ => {
+                    // mouse over new item or
+                    // first item in the array
+                    let mut new_item = component.clone();
+                    new_item.points.push(position);
+                    weight_changed = new_item.update_weight();
+                    self.weighted_items.push(new_item);
+                }
             }
 
-            let weight_changed = self.update_weight(position);
             if weight_changed {
                 self.search_word();
             }
@@ -102,19 +132,6 @@ impl SearchHandler {
     pub fn search_word(&mut self) {
         //info!("words: {:?}", self.beam_search());
         //info!("words: {}", self.beam_search().join(", "));
-    }
-
-    pub fn update_weight(&mut self, position: Point) -> bool {
-        if let Some(last_item) = self.weighted_items.last() {
-            let distance = last_item.bounds.center().distance(position);
-            let weight = ((1.0 - (distance / 100.0)) * 100.0) as u32;
-            if weight > last_item.weight {
-                self.weighted_items.last_mut().unwrap().weight = weight;
-                //info!("weight: {}", weight);
-                return true
-            }
-        }
-        false
     }
 
     // given a vector of letters and a weighted score,
