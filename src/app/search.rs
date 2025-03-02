@@ -26,10 +26,10 @@ pub struct Candidate {
 impl Candidate {
     pub fn update_weight(&mut self) -> bool {
         let mut weight_changed = false;
-        // calculate the distance between the last two points
+        // calculate the distance between the last point and the center of the bounds
         if self.points.len() > 1 {
-            let distance = self.points[self.points.len() - 1].distance(self.points[self.points.len() - 2]);
-            let weight = ((1.0 - (distance / 100.0)) * 100.0) as u32;
+            let falloff = functions::gaussian_pdf(self.points[self.points.len() - 1], self.bounds.center(), 15.0);
+            let weight = (falloff * 100.0) as u32; // convert 0-100
             if weight > self.weight {
                 self.weight = weight;
                 weight_changed = true;
