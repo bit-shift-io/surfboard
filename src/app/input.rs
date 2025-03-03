@@ -79,9 +79,17 @@ impl InputHandler {
         }
     }
 
-    pub fn update_event<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler, component_handler: &mut SearchHandler) -> Task<main_app::Message> {
+    pub fn update_event<'a>(&mut self, event: &Event, gesture_handler: &mut GestureHandler, window_handler: &mut WindowHandler, search_handler: &mut SearchHandler) -> Task<main_app::Message> {
         match event {
-            //Event::Window(event) => todo!(),
+            Event::Window(event) => {
+                match event {
+                    iced::window::Event::Opened{..} => {
+                        search_handler.load_dictionary();
+                        return Task::none()
+                    }
+                    _ => Task::none()
+                }
+            },
 
             // keyboard
             Event::Keyboard(keyboard::Event::KeyPressed {key, ..}) => match key {
@@ -131,24 +139,24 @@ impl InputHandler {
 
                                 
                                 // add start positions
-                                let _ = component_handler.start();
+                                let _ = search_handler.start();
                                 let _ = gesture_handler.start();
 
                                 if self.last_cursor_position.is_some() {
                                     let _ = gesture_handler.update_move(self.last_cursor_position.unwrap());
-                                    let _ = component_handler.update_move(self.last_cursor_position.unwrap());
+                                    let _ = search_handler.update_move(self.last_cursor_position.unwrap());
                                 }
 
                                 // add current position
                                 return Task::batch(vec![
                                     gesture_handler.update_move(*position), 
-                                    component_handler.update_move(*position),
+                                    search_handler.update_move(*position),
                                 ])
                             }
                             PressType::Gesture => {
                                 return Task::batch(vec![
                                     gesture_handler.update_move(*position), 
-                                    component_handler.update_move(*position),
+                                    search_handler.update_move(*position),
                                 ])
                             }
                             _ => {}
@@ -172,7 +180,7 @@ impl InputHandler {
                                     PressType::Gesture => { 
                                         result = Task::batch(vec![
                                             gesture_handler.end(), 
-                                            component_handler.end(),
+                                            search_handler.end(),
                                         ]);
                                     }
                                     _ => {}

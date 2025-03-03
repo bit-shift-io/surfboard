@@ -5,9 +5,11 @@ use iced::{
 };
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::collections::HashSet;
 use crate::utils::*;
 use crate::app::*;
+use trie_rs::{TrieBuilder, inc_search::Answer};
+
+static MIN_DISTANCE: f32 = 15.0; // pixels
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -19,30 +21,80 @@ pub enum Message {
 pub struct Candidate {
     pub text: String,
     pub bounds: Rectangle,
-    pub weight: u32,
     pub points: Vec<Point>,
+    pub filtered_points: Vec<Point>,
+    pub weight: u32,
+    pub position_weight: u32,
+    pub first_or_last_weight: bool,
+    pub angles_change_weight: u32,
+    pub is_complete: bool,
 }
 
 impl Candidate {
+    pub fn add_point(&mut self, point: Point) {
+        self.points.push(point);
+
+        if self.filtered_points.len() > 1 {
+            // distance check with the back/end item
+            let prev = self.filtered_points.last().unwrap();
+            let distance = Point::distance(&prev, point);
+            if distance < MIN_DISTANCE {
+                return
+            }
+            self.filtered_points.push(point);
+        } else {
+            self.filtered_points.push(point);
+        }
+    }
+
     pub fn update_weight(&mut self) -> bool {
-        let mut weight_changed = false;
-        // calculate the distance between the last point and the center of the bounds
+        let mut new_weight = 0;
+
+        // weight distance between the last point and the center of the bounds
         if self.points.len() > 1 {
-            let falloff = functions::gaussian_pdf(self.points[self.points.len() - 1], self.bounds.center(), 15.0);
-            let weight = (falloff * 100.0) as u32; // convert 0-100
-            if weight > self.weight {
-                self.weight = weight;
-                weight_changed = true;
+            let falloff = (functions::gaussian_pdf(
+                self.points[self.points.len() - 1], 
+                self.bounds.center(), 
+                15.0) * 100.0
+            ) as u32;
+            if falloff > self.position_weight {
+                self.position_weight = falloff;
             }
         }
+        new_weight += self.position_weight;
 
-        // todo: calculate the number of points
+        // weight number of points
+        // we get about 30 points if passing over the entire bounds
+        let num_points = self.points.len();
+        new_weight += num_points as u32;
 
-        // todo: calculate the change of angles
+        // weight change of angles
+        // 0-360 degrees
+        if self.filtered_points.len() > 2 {
+            let angle = functions::angle_between_points(
+                self.filtered_points[self.filtered_points.len() - 3], 
+                self.filtered_points[self.filtered_points.len() - 2],
+                self.filtered_points[self.filtered_points.len() - 1],
+            ) as u32;
+            info!("{} angle: {}", self.text,angle);
+            if angle > self.angles_change_weight {
+                self.angles_change_weight = angle as u32;
+            }
+            //info!("angle_change: {}", angle_change);
+            new_weight += self.angles_change_weight;
+        }
 
-        // todo: calculate the first and last points
+        // weight first and last points
+        if self.first_or_last_weight {
+            new_weight += 50;
+        }
         
-        weight_changed
+        // update the weight if it has changed
+        if new_weight > self.weight {
+            self.weight = new_weight;
+            return true
+        }
+        false
     }
 }
 
@@ -65,7 +117,17 @@ impl SearchHandler {
     pub fn update(&mut self, message: Message) -> Task<main_app::Message> {
         match message {
             Message::Update(text, rectangle) => {
-                self.components.push(Candidate { text, bounds: rectangle, weight: 0, points: Vec::new() });
+                self.components.push(Candidate { 
+                    text, 
+                    bounds: rectangle, 
+                    weight: 0, 
+                    points: Vec::new(), 
+                    filtered_points: Vec::new(),
+                    position_weight: 0, 
+                    first_or_last_weight: false,
+                    angles_change_weight: 0,
+                    is_complete: false
+                });
                 Task::none()
             }
             Message::Reset => {
@@ -82,6 +144,12 @@ impl SearchHandler {
     }
 
     pub fn end(&mut self) -> Task<main_app::Message> {
+        // update last item
+        let last = self.weighted_items.last_mut().unwrap();
+        last.first_or_last_weight = true;
+        last.update_weight();
+
+        // log
         let formatted_items: String = self.weighted_items
             .iter()
             .map(|item| format!("{} - {}\n", item.text, item.weight))
@@ -103,27 +171,41 @@ impl SearchHandler {
 
         // update the weighted item
         if let Some(component) = selected_component {
-            let mut weight_changed = false;
 
             match self.weighted_items.last_mut() {
                 Some(last_item) if last_item.text == component.text => {
-                    // update the last item
-                    last_item.points.push(position);
-                    weight_changed = last_item.update_weight();
+                    last_item.add_point(position);
+                    last_item.update_weight();
                 }
                 _ => {
+                    // update the previous item and mark as complete
+                    if self.weighted_items.len() > 1 {
+                        let length = self.weighted_items.len();
+                        let previous_item = self.weighted_items.get_mut( length - 2).unwrap();
+                        previous_item.is_complete = true;
+                        previous_item.update_weight();
+                    }
+
                     // mouse over new item or
                     // first item in the array
                     let mut new_item = component.clone();
-                    new_item.points.push(position);
-                    weight_changed = new_item.update_weight();
+                    new_item.add_point(position);
+
+                    // first item
+                    if self.weighted_items.is_empty() { 
+                        new_item.first_or_last_weight = true
+                    }
+
+                    new_item.update_weight();
                     self.weighted_items.push(new_item);
+
+
                 }
             }
 
-            if weight_changed {
-                self.search_word();
-            }
+            // only search when we first enter the key, and when we exit the key
+            // the weight is always changing, so we dont want to keep searching
+            self.search_word();
         }
 
         Task::none()
@@ -168,6 +250,23 @@ impl SearchHandler {
         }
 
         best_matches
+    }
+
+    pub fn load_dictionary(&mut self) {
+        //let cracklib = include_str!("/usr/share/cracklib/cracklib-small").split_whitespace();
+        let now = std::time::Instant::now();
+        let mut builder = TrieBuilder::new();
+        for word in globals::DICTIONARY.split_whitespace() {
+            builder.push(word);
+        }
+
+        let mut trie = builder.build();
+        info!("Dictionary loaded in {}ms", now.elapsed().as_millis());
+        // let (mut hits, mut misses) = (0,0);
+        // for word in cracklib {
+        //     if trie.exact_match(word) { hits += 1 } else { misses += 1 };
+        // }
+        // info!("Hits {}, Misses {}", hits, misses);
     }
 
 }

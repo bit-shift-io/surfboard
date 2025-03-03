@@ -43,3 +43,8 @@ https://users.rust-lang.org/t/building-c-like-self-registrering-factory-in-rust/
 https://github.com/FleksySDK/VirtualKeyboardSDK/tree/main
 
 https://www.fleksy.com/blog/how-swipe-typing-works/
+
+
+## trie references
+
+https://dev.to/timclicks/two-trie-implementations-in-rust-ones-super-fast-2f3m

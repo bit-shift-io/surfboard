@@ -30,6 +30,7 @@ iced = { git = "https://github.com/iced-rs/iced", branch = "master" }
 iced_core = { git = "https://github.com/iced-rs/iced", branch = "master" }
 iced_graphics = { git = "https://github.com/iced-rs/iced", branch = "master" }
 iced_runtime = { git = "https://github.com/iced-rs/iced", branch = "master" }
+trie-rs = "0.4.2"
 
 
 [target.'cfg(any(target_os="windows"))'.dependencies]

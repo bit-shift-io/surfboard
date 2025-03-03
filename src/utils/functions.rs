@@ -104,7 +104,7 @@ pub fn gaussian_pdf(point1: Point, point2: Point, sigma: f32) -> f32 {
     // Normalize the result to be in the range 0-1.0
     let max_value = 1.0 / (sigma * (2.0 * PI).sqrt());
     let normalized_result = result / max_value;
-    info!("distance: {}, result: {}", distance, normalized_result);
+    //info!("distance: {}, result: {}", distance, normalized_result);
     normalized_result
 }
 
@@ -117,4 +117,12 @@ pub fn exponential_falloff(point1: Point, point2: Point) -> f32 {
     let distance = point1.distance(point2);
     // Calculate the exponential falloff
     E.powf(-falloff_rate * distance)
+}
+
+/// Computes the angle between 3 points.
+pub fn angle_between_points(point1: Point, point2: Point, point3: Point) -> f32 {
+    let angle1 = calculate_angle_degrees(point1, point2);
+    let angle2 = calculate_angle_degrees(point2, point3);
+    let angle = (angle2 - angle1).abs();
+    return angle as f32
 }
