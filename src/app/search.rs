@@ -3,6 +3,7 @@ use iced::{
     Rectangle, 
     Task
 };
+use trie_rs::Trie;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use crate::utils::*;
@@ -65,7 +66,7 @@ impl Candidate {
 
         // weight number of points
         // we get about 30 points if passing over the entire bounds
-        let num_points = self.points.len();
+        let num_points = self.filtered_points.len();
         new_weight += num_points as u32;
 
         // weight change of angles
@@ -76,7 +77,6 @@ impl Candidate {
                 self.filtered_points[self.filtered_points.len() - 2],
                 self.filtered_points[self.filtered_points.len() - 1],
             ) as u32;
-            info!("{} angle: {}", self.text,angle);
             if angle > self.angles_change_weight {
                 self.angles_change_weight = angle as u32;
             }
@@ -86,7 +86,7 @@ impl Candidate {
 
         // weight first and last points
         if self.first_or_last_weight {
-            new_weight += 50;
+            new_weight += 200;
         }
         
         // update the weight if it has changed
@@ -104,6 +104,7 @@ impl Candidate {
 pub struct SearchHandler {
     components: Vec<Candidate>,
     weighted_items: Vec<Candidate>,
+    dictionary: Option<Trie<u8>>,
 }
 
 impl SearchHandler {
@@ -111,6 +112,7 @@ impl SearchHandler {
         SearchHandler {
             components: Vec::new(),
             weighted_items: Vec::new(),
+            dictionary: None,
         }
     }
 
@@ -148,6 +150,7 @@ impl SearchHandler {
         let last = self.weighted_items.last_mut().unwrap();
         last.first_or_last_weight = true;
         last.update_weight();
+        self.search_word();
 
         // log
         let formatted_items: String = self.weighted_items
@@ -198,8 +201,6 @@ impl SearchHandler {
 
                     new_item.update_weight();
                     self.weighted_items.push(new_item);
-
-
                 }
             }
 
@@ -212,56 +213,87 @@ impl SearchHandler {
     }
 
     pub fn search_word(&mut self) {
-        //info!("words: {:?}", self.beam_search());
-        //info!("words: {}", self.beam_search().join(", "));
-    }
+        if self.dictionary.is_none() {
+            self.load_dictionary();
+        }
 
-    // given a vector of letters and a weighted score,
-    // we want to search the static DICTIONARY
-    // and return the best 3 matches
-    fn beam_search(&mut self) -> Vec<String> {
-        // Create a BinaryHeap to store the candidate matches
-        let mut heap = BinaryHeap::new();
-        //let mut seen = HashSet::new();
-                
-        // Iterate over the weighted items to create initial candidates
+        //info!("searching...");
+        // todo investigate: For unicode its easier to use .query_until().
+        let dictionary = self.dictionary.as_ref().unwrap();
+        let mut search = dictionary.inc_search();
+        let mut search_answer = String::new();
+
         for item in &self.weighted_items {
-            heap.push(Reverse((vec![item.text.clone()], item.weight)));
-        }
-        
-        // Perform beam search
-        let mut best_matches = Vec::new();
-        while let Some(Reverse((sequence, score))) = heap.pop() {
-            let word = sequence.join("");
-            if globals::DICTIONARY.contains(&word.as_str()) {
-                best_matches.push(word);
-                if best_matches.len() == 3 {
-                    break;
+            // skip low weight items
+            if item.weight < 100 {
+                continue
+            }
+
+            if let Some(first_char) = item.text.chars().next() {
+                //let res = search.query(&(first_char as u8));
+                let mut buf = [0; 4];
+                let res = search.query_until(first_char.encode_utf8(&mut buf).as_bytes());
+
+
+                match res {
+                    Ok(answer) => {
+                        match answer {
+                            Answer::Prefix => {
+                                search_answer.push_str(&item.text);
+                                //info!("prefix: {}", item.text);
+                            }
+                            Answer::Match => {
+                                search_answer.push_str(&item.text);
+                                //info!("match: {}", item.text);
+                            }
+                            Answer::PrefixAndMatch => {
+                                search_answer.push_str(&item.text);
+                                //info!("p&m: {}", item.text);
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        // Handle the error case
+                        //info!("error: {}", item.text);
+                    }
                 }
-            }
 
-            // Expand the candidate by adding more letters
-            for item in &self.weighted_items {
-                let mut new_sequence = sequence.clone();
-                new_sequence.push(item.text.clone());
-                let new_score = score + item.weight;
-                heap.push(Reverse((new_sequence, new_score)));
+                // match res {
+                //     Some(Answer::Prefix) => {
+                //         info!("prefix: {}", item.text);
+                //     }
+                //     Some(Answer::Match) => {
+                //         info!("match: {}", item.text);
+                //     }
+                //     Some(Answer::PrefixAndMatch) => {
+                //         info!("p&m: {}", item.text);
+                //     }
+                //     _ => {
+                //         info!("no match: {}", item.text);
+                //     }
+                // }
             }
         }
-
-        best_matches
+        info!("search result: {:?}", search_answer); //search.value();
+        search.reset();
     }
 
     pub fn load_dictionary(&mut self) {
-        //let cracklib = include_str!("/usr/share/cracklib/cracklib-small").split_whitespace();
+        if self.dictionary.is_some() {
+            return
+        }
+
         let now = std::time::Instant::now();
         let mut builder = TrieBuilder::new();
         for word in globals::DICTIONARY.split_whitespace() {
             builder.push(word);
         }
 
-        let mut trie = builder.build();
+        let trie = builder.build();
         info!("Dictionary loaded in {}ms", now.elapsed().as_millis());
+        self.dictionary = Some(trie);
+
+        //let cracklib = include_str!("/usr/share/cracklib/cracklib-small").split_whitespace();
         // let (mut hits, mut misses) = (0,0);
         // for word in cracklib {
         //     if trie.exact_match(word) { hits += 1 } else { misses += 1 };
